@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "521006669305",
+    "project_id": "sada-30546",
+    "storage_bucket": "sada-30546.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:521006669305:android:52649ba4cd0810ca323128",
+        "android_client_info": {
+          "package_name": "com.example.sada"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "521006669305-n59ami0gr1hbnmr43qi5vvb9ap5k1n3f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.sada",
+            "certificate_hash": "4e9011862c891b3add315e20eea89e3a5de7be7c"
+          }
+        },
+        {
+          "client_id": "521006669305-4tj41kmfn4iividn8q7vo0u2t7maejfj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDvTsMNy5dYlLU5kchZf7r8GNe9WS00P54"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "521006669305-4tj41kmfn4iividn8q7vo0u2t7maejfj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
