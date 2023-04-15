@@ -3,11 +3,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sada/model/database_model/employees.dart';
+import 'package:sada/screen/small_screen/widget/custom_progress_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../model/database_helper.dart';
 import '../../model/toast_model.dart';
-import '../../screen/user/signup_screen.dart';
 
 
 class UserController extends ChangeNotifier {
@@ -42,7 +42,7 @@ class UserController extends ChangeNotifier {
     userAdd = (await _auth.signInWithCredential(credential)).user;
     final User? user = authResult.user;
     final AdditionalUserInfo? additionalUserInfo = authResult.additionalUserInfo;
-    fetchData(context);
+    showUpdateProgress(context);
     if (additionalUserInfo!.isNewUser) {
       email.text=user!.email!;
       username.text=user.displayName!;
@@ -97,13 +97,7 @@ class UserController extends ChangeNotifier {
     preferences.setString("userId", dataList.last["user_id"].toString());
     preferences.setString("headersUser", headersUser.toString());
     preferences.setBool("isAdmin", dataList.last["isAdmin"]);
-    if(!isEmail){
-      await addDepartment();
-      Navigator.of(context).pushNamedAndRemoveUntil('/MenuScreen', (Route<dynamic> route) => false);
-      restData();
-    }else{
-      await addDepartment();
-    }
+      await addEmployees(dataList.last["isAdmin"]);
     }} on FirebaseAuthException catch (e) {
       if (e.code == 'wrong-password') {
         print('The password provided is too weak.');
@@ -187,21 +181,29 @@ class UserController extends ChangeNotifier {
 
     return;
   }
-  addDepartment()async{
+  addEmployees(isAdmin)async{
+    List jsonData=[];
     await _databaseHelper.deleteItemsDb("employees");
     await _databaseHelper.deleteSequenceItemsDb("employees");
-    List jsonData=[];
-    await FirebaseFirestore.instance.collection('Users').get().then((QuerySnapshot querySnapshot) => {
-      querySnapshot.docs.forEach((doc) {
-        jsonData.add(doc.data());
-      }),
-    });
-    for(int i=0;i<jsonData.length;i++){
-      print(jsonData[i]["isAdmin"]);
-      Employees employees = Employees(isAdmin:jsonData[i]["isAdmin"]?1:0,
-          user_id:jsonData[i]["user_id"], employees_name:jsonData[i]["user_name"],department_id:jsonData[i]["department_id"], );
-      await _databaseHelper.insertToTableDB("employees",employees.toMap());
+    List<Employees> newData=[];
+    if(isAdmin){
+      await FirebaseFirestore.instance.collection('Users').get().then((QuerySnapshot querySnapshot) => {
+        querySnapshot.docs.forEach((doc) {
+          jsonData.add(doc.data());
+        }),
+      });
+    }else{
+      await FirebaseFirestore.instance.collection('Users').where("isAdmin" ,isEqualTo: false).get().then((QuerySnapshot querySnapshot) => {
+        querySnapshot.docs.forEach((doc) {
+          jsonData.add(doc.data());
+        }),
+      });
     }
+    for (var json in jsonData) {
+      newData.add(Employees.fromMapUpdate(json));
+    }
+    await _databaseHelper.updateDatabase("employees",newData);
+
   }
   restData(){
     description.text="";

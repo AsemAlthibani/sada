@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:sada/model/database_model/task.dart';
@@ -45,7 +46,7 @@ class EmployeesController extends ChangeNotifier {
     }
     notifyListeners();
   }
-  Future<void> addEmployees()async{
+  Future<void> addEmployees(create_by)async{
     Users users=Users(  user_password:password.text,
       user_phone:phone.text,
       user_email:email.text,
@@ -54,6 +55,8 @@ class EmployeesController extends ChangeNotifier {
       user_name: username.text,
       user_id: userId,
       updated: 1,
+        create_at:DateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'","en").format(DateTime.now()),
+        create_by:create_by,
       api: 1,
       isAdmin: isAdmin
     );
@@ -91,17 +94,25 @@ class EmployeesController extends ChangeNotifier {
     phone.text="";
     description.text="";
   }
-  Future<List<Task>> getTaskFromDb()async{
-    return await _databaseHelper.retrieveTaskFromDb();
-  }
+
   Future<List<Task>> getTaskTypeFromDb(type,create_by)async{
     if(type==1){
-      return await _databaseHelper.retrieveTaskCreateByUserFromDb(create_by);
+      return await _databaseHelper.retrieveTaskFromDb('SELECT * FROM task where create_by="$create_by" AND  emp_id="$create_by"');
+    }else if(type==2){
+      return await _databaseHelper.retrieveTaskFromDb('SELECT * FROM task where create_by !="$create_by" AND  emp_id="$create_by"');
     }else{
-      return await _databaseHelper.retrieveTaskCreateByUserFromDb(create_by);
+      return await _databaseHelper.retrieveTaskFromDb('SELECT * FROM task where create_by="$create_by" AND  emp_id !="$create_by"');
+    }
+  }
+  Future<List<Task>> getTaskTypeForAdminFromDb(type,create_by)async{
+    if(type==1){
+      return await _databaseHelper.retrieveTaskFromDb('SELECT * FROM task where enable_admin=0 AND for_admin=1 ');
+    }else{
+      return await _databaseHelper.retrieveTaskFromDb('SELECT * FROM task where enable_admin=1 AND for_admin=1');
     }
   }
   Future<List<Users>> getEmployeesFromDb()async{
+    // enable_admin;
     return await _databaseHelper.retrieveUsersFromDb();
   }
   Future<User> signInWithFirebase() async {
@@ -121,14 +132,13 @@ class EmployeesController extends ChangeNotifier {
     notifyListeners();
     return user!;
   }
-  Future<void> userSetupWithFirebase() async {
+  Future<void> userSetupWithFirebase(create_by) async {
     CollectionReference users = FirebaseFirestore.instance.collection('Users');
     FirebaseAuth auth = FirebaseAuth.instance;
      userId = auth.currentUser!.uid.toString();
     users.add({'user_name': username.text, 'user_id': userId,"user_phone":phone.text,"user_email":email.text,"user_password":password.text,
-      "isAdmin":isAdmin,"user_description":description.text,"department_id":departmentId});
+      "isAdmin":isAdmin,"user_description":description.text,"department_id":departmentId,"create_by":create_by,"create_at":DateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'","en").format(DateTime.now()),});
     notifyListeners();
     return;
   }
-
 }

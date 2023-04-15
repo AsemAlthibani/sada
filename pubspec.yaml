@@ -64,6 +64,7 @@ dependencies:
   sn_progress_dialog: ^1.0.8
   easy_localization: ^3.0.1
   fl_chart: ^0.55.2
+  sqflite_common_ffi: ^2.2.0+1
 
 
 dev_dependencies:

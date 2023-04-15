@@ -4,6 +4,7 @@ import 'package:sqflite/sqflite.dart';
 
 import 'database_model/department.dart';
 import 'database_model/employees.dart';
+import 'database_model/reports_uploaded.dart';
 import 'database_model/task.dart';
 import 'database_model/users.dart';
 
@@ -17,17 +18,39 @@ class DatabaseHelper {
           '''
    CREATE TABLE `task` (
   `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-  `task_name` varchar(255) DEFAULT NULL,
+  `online_id` TEXT DEFAULT NULL,
+  `task_name` TEXT DEFAULT NULL,
   `date` TEXT DEFAULT NULL,
-  `task_description` varchar(255) DEFAULT NULL,
+  `task_description` TEXT DEFAULT NULL,
   `department_id` int DEFAULT NULL,
-  `user_id` int DEFAULT NULL,
-  `create_by` int DEFAULT NULL,
+  `emp_id` int DEFAULT NULL,
+  `emp_name` TEXT DEFAULT NULL,
+  `create_by` TEXT DEFAULT NULL,
+  `create_by_name` TEXT DEFAULT NULL,
   `start_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `end_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `completion_rate` decimal(25,2) NOT NULL DEFAULT '0.00',
   `task_completed` tinyint(1) DEFAULT '0',
+  `enable_admin` tinyint(1) NOT NULL DEFAULT '0',
+  `not` TEXT DEFAULT NULL,
   `updated` tinyint(1) NOT NULL DEFAULT '1',
+  `for_admin` tinyint(1) NOT NULL DEFAULT '0',
+  `api` tinyint(1) DEFAULT '0'
+  );
+  '''
+      );
+      db.execute(
+          '''
+   CREATE TABLE `reports_uploaded` (
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  `online_id` TEXT DEFAULT NULL,
+  `file_name` TEXT DEFAULT NULL,
+  `file_path` TEXT DEFAULT NULL,
+  `file_url` TEXT DEFAULT NULL,  
+  `date` TEXT DEFAULT NULL,
+  `create_by` TEXT DEFAULT NULL,
+  `create_by_name` TEXT DEFAULT NULL,
+  `not` TEXT DEFAULT NULL,
   `api` tinyint(1) DEFAULT '0'
   );
   '''
@@ -36,13 +59,15 @@ class DatabaseHelper {
           '''
    CREATE TABLE `users` (
   `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-  `user_id` varchar(255) DEFAULT NULL,
+  `user_id` TEXT DEFAULT NULL,
   `department_id` int DEFAULT NULL,
-  `user_name` varchar(255) DEFAULT NULL,
-  `user_description` varchar(255) DEFAULT NULL,
-  `user_email` varchar(255) DEFAULT NULL,
-  `user_phone` varchar(255) DEFAULT NULL,
-  `user_password` varchar(255) DEFAULT NULL,
+    `create_by` TEXT DEFAULT NULL,
+    `create_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `user_name` TEXT DEFAULT NULL,
+  `user_description` TEXT DEFAULT NULL,
+  `user_email` TEXT DEFAULT NULL,
+  `user_phone` TEXT DEFAULT NULL,
+  `user_password` TEXT DEFAULT NULL,
   `isAdmin` tinyint(1) NOT NULL DEFAULT '0',
   `updated` tinyint(1) NOT NULL DEFAULT '1',
   `api` tinyint(1) DEFAULT '0'
@@ -53,7 +78,9 @@ class DatabaseHelper {
           '''
    CREATE TABLE `department` (
   `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-  `department_name` varchar(255) DEFAULT NULL,
+  `department_name` TEXT DEFAULT NULL,
+   `create_by` TEXT DEFAULT NULL,
+    `create_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated` tinyint(1) NOT NULL DEFAULT '1',
   `api` tinyint(1) DEFAULT '0'
     );
@@ -63,7 +90,7 @@ class DatabaseHelper {
           '''
    CREATE TABLE `employees` (
   `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-  `employees_name` varchar(255) DEFAULT NULL,
+  `employees_name` TEXT DEFAULT NULL,
   `user_id` int DEFAULT NULL,
   `department_id` int DEFAULT NULL,
   `isAdmin` tinyint(1) NOT NULL DEFAULT '0',
@@ -76,9 +103,14 @@ class DatabaseHelper {
           '''
          CREATE TABLE `note` (
   `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-  `note_description` varchar(255) DEFAULT NULL,
+  `note_description` TEXT DEFAULT NULL,
   `isAdmin` tinyint(1) NOT NULL DEFAULT '0',
-`user_id` int DEFAULT NULL,
+  `create_by` TEXT DEFAULT NULL,
+  `create_by_name` TEXT DEFAULT NULL,
+  `online_id` TEXT DEFAULT NULL,
+  `emp_name` TEXT DEFAULT NULL,
+  `emp_id` TEXT DEFAULT NULL,
+  `date` TEXT DEFAULT NULL,
   `updated` tinyint(1) NOT NULL DEFAULT '1',
   `api` tinyint(1) DEFAULT '0'
     ); 
@@ -103,8 +135,11 @@ class DatabaseHelper {
     List<Map<String, dynamic>> taskMap = await db.rawQuery('SELECT * FROM department');
     return List.generate(taskMap.length, (index) {
       return Department(id: taskMap[index]['id'], department_name: taskMap[index]['department_name'],
+          create_by: taskMap[index]["create_by"],
+          create_at: taskMap[index]["create_at"],
           updated: taskMap[index]['updated'],api: taskMap[index]['api'] );
-    });
+    }
+  );
   }
   Future<List<Employees>> retrieveEmployeesFromDb() async {
     Database db = await initializeRestaurantDb();
@@ -120,6 +155,24 @@ class DatabaseHelper {
       );
     });
   }
+  Future<List<ReportsUploaded>> retrieveReportsUploadedFromDb() async {
+    Database db = await initializeRestaurantDb();
+    List<Map<String, dynamic>> taskMap = await db.rawQuery('SELECT * FROM reports_uploaded');
+    return List.generate(taskMap.length, (index) {
+      return  ReportsUploaded(
+        id: taskMap[index]["id"],
+        file_name: taskMap[index]["file_name"],
+        file_path: taskMap[index]["file_path"],
+        file_url: taskMap[index]["file_url"],
+        date: taskMap[index]["date"],
+        not: taskMap[index]["not"],
+        online_id: taskMap[index]["online_id"],
+        create_by: taskMap[index]["create_by"],
+        create_by_name: taskMap[index]["create_by_name"],
+        api: taskMap[index]["api"],
+      );
+    });
+  }
   Future<List<Users>> retrieveUsersFromDb() async {
     Database db = await initializeRestaurantDb();
     List<Map<String, dynamic>> taskMap = await db.rawQuery('SELECT * FROM users');
@@ -131,6 +184,8 @@ class DatabaseHelper {
         user_email: taskMap[index]["user_email"],
         department_id: taskMap[index]["department_id"],
         user_description: taskMap[index]["user_description"],
+        create_by: taskMap[index]["create_by"],
+        create_at: taskMap[index]["create_at"],
         user_name: taskMap[index]["user_name"],
         user_id: taskMap[index]["user_id"],
         updated: taskMap[index]["updated"],
@@ -139,94 +194,22 @@ class DatabaseHelper {
       );
     });
   }
-  Future<List<Task>> retrieveTaskFromDb() async {
+
+  Future<List<Task>> retrieveTaskFromDb(query) async {
     Database db = await initializeRestaurantDb();
-    List<Map<String, dynamic>> taskMap = await db.rawQuery('SELECT * FROM task');
+    List<Map<String, dynamic>> taskMap = await db.rawQuery(query);
     return List.generate(taskMap.length, (index) {
       return Task(id: taskMap[index]["id"],
           task_name: taskMap[index]["task_name"],
           task_description: taskMap[index]["task_description"],
-          user_id: taskMap[index]["user_id"],
+          emp_id: taskMap[index]["emp_id"],
           date: taskMap[index]["date"],
-          create_by: taskMap[index]["create_by"],
-          department_id: taskMap[index]["department_id"],
-          end_date: taskMap[index]["end_date"],
-          start_date: taskMap[index]["start_date"],
-          task_completed: taskMap[index]["task_completed"],
-          completion_rate: taskMap[index]["completion_rate"],
-          updated: taskMap[index]["updated"],
-          api: taskMap[index]["api"]
-      );
-    });
-  }
-  Future<List<Task>> retrieveTaskToFirebaseFromDb() async {
-    Database db = await initializeRestaurantDb();
-    List<Map<String, dynamic>> taskMap = await db.rawQuery('SELECT * FROM task where api=0 ');
-    return List.generate(taskMap.length, (index) {
-      return Task(id: taskMap[index]["id"],
-          task_name: taskMap[index]["task_name"],
-          task_description: taskMap[index]["task_description"],
-          user_id: taskMap[index]["user_id"],
-          date: taskMap[index]["date"],
-          create_by: taskMap[index]["create_by"],
-          department_id: taskMap[index]["department_id"],
-          end_date: taskMap[index]["end_date"],
-          start_date: taskMap[index]["start_date"],
-          task_completed: taskMap[index]["task_completed"],
-          completion_rate: taskMap[index]["completion_rate"],
-          updated: taskMap[index]["updated"],
-          api: taskMap[index]["api"]
-      );
-    });
-  }
-  Future<List<Task>> retrieveTaskToFirebaseUpdateFromDb() async {
-    Database db = await initializeRestaurantDb();
-    List<Map<String, dynamic>> taskMap = await db.rawQuery('SELECT * FROM task where updated=0 ');
-    return List.generate(taskMap.length, (index) {
-      return Task(id: taskMap[index]["id"],
-          task_name: taskMap[index]["task_name"],
-          task_description: taskMap[index]["task_description"],
-          user_id: taskMap[index]["user_id"],
-          date: taskMap[index]["date"],
-          create_by: taskMap[index]["create_by"],
-          department_id: taskMap[index]["department_id"],
-          end_date: taskMap[index]["end_date"],
-          start_date: taskMap[index]["start_date"],
-          task_completed: taskMap[index]["task_completed"],
-          completion_rate: taskMap[index]["completion_rate"],
-          updated: taskMap[index]["updated"],
-          api: taskMap[index]["api"]
-      );
-    });
-  }
-  Future<List<Task>> retrieveTaskCreateByAdminFromDb(create_by) async {
-    Database db = await initializeRestaurantDb();
-    List<Map<String, dynamic>> taskMap = await db.rawQuery('SELECT * FROM task where create_by !="$create_by" AND  user_id="$create_by"');
-    return List.generate(taskMap.length, (index) {
-      return Task(id: taskMap[index]["id"],
-          task_name: taskMap[index]["task_name"],
-          task_description: taskMap[index]["task_description"],
-          user_id: taskMap[index]["user_id"],
-          date: taskMap[index]["date"],
-          create_by: taskMap[index]["create_by"],
-          department_id: taskMap[index]["department_id"],
-          end_date: taskMap[index]["end_date"],
-          start_date: taskMap[index]["start_date"],
-          task_completed: taskMap[index]["task_completed"],
-          completion_rate: taskMap[index]["completion_rate"],
-          updated: taskMap[index]["updated"],
-          api: taskMap[index]["api"]);
-    });
-  }
-  Future<List<Task>> retrieveTaskCreateByUserFromDb(create_by) async {
-    Database db = await initializeRestaurantDb();
-    List<Map<String, dynamic>> taskMap = await db.rawQuery('SELECT * FROM task where create_by="$create_by" ');
-    return List.generate(taskMap.length, (index) {
-      return Task(id: taskMap[index]["id"],
-          task_name: taskMap[index]["task_name"],
-          task_description: taskMap[index]["task_description"],
-          user_id: taskMap[index]["user_id"],
-          date: taskMap[index]["date"],
+          not: taskMap[index]["not"],
+          for_admin: taskMap[index]["for_admin"],
+          online_id: taskMap[index]["online_id"],
+          enable_admin: taskMap[index]["enable_admin"],
+          create_by_name: taskMap[index]["create_by_name"],
+          emp_name: taskMap[index]["emp_name"],
           create_by: taskMap[index]["create_by"],
           department_id: taskMap[index]["department_id"],
           end_date: taskMap[index]["end_date"],
@@ -248,8 +231,44 @@ class DatabaseHelper {
     await db.rawQuery("delete from '$tablename' ");
 
   }
+  Future<List> deleteItemsInTableDb(tableName,id) async{
+    Database db = await initializeRestaurantDb();
+    return db.rawQuery('DELETE FROM "$tableName" WHERE  id=$id');
+  }
+  Future<List> deleteSequenceItemsInTableDb(tableName,id) async{
+    Database db = await initializeRestaurantDb();
+    return db.rawQuery('DELETE FROM sqlite_sequence WHERE name= "$tableName" AND  id=$id');
+  }
   Future<void> deleteSequenceItemsDb(tablename) async{
     Database db = await initializeRestaurantDb();
     await db.rawQuery("delete from sqlite_sequence where name='$tablename' ");
+  }
+  Future<void> deleteDatabase(tableName,dataToDelete) async {
+    Database _db = await initializeRestaurantDb();
+    await _db.transaction((txn) async {
+      final batch = txn.batch();
+      for (var item in dataToDelete) {
+        batch.delete(
+          tableName,
+          where: 'user_id = ?',
+          whereArgs: [item.user_id],
+        );
+      }
+      await batch.commit();
+    });
+  }
+  Future<void> updateDatabase(tableName,newData) async {
+    Database _db = await initializeRestaurantDb();
+    await _db.transaction((txn) async {
+      final batch = txn.batch();
+      for (var item in newData) {
+        batch.insert(
+          tableName,
+          item.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+      await batch.commit();
+    });
   }
 }

@@ -20,6 +20,13 @@ class  Employees{
     isAdmin: json["isAdmin"],
     api: json["api"],
   );
+  factory Employees.fromMapUpdate(Map<String, dynamic> json) => Employees(
+    id: json["id"],
+    isAdmin:json["isAdmin"]?1:0,
+    user_id:json["user_id"],
+    employees_name:json["user_name"],
+    department_id:json["department_id"],
+  );
 
   Map<String, dynamic> toMap() {
     return {

@@ -1,6 +1,6 @@
 class  Users{
 
-  var id,user_password, user_phone, user_email, isAdmin,user_description, user_name, user_id,department_id,updated,api;
+  var id,user_password, user_phone, user_email, isAdmin,user_description, user_name, user_id,department_id,updated,api,create_by,create_at;
 
 
   Users({
@@ -10,6 +10,8 @@ class  Users{
     this.user_email,
     this.user_description,
     this.user_name,
+    this.create_by,
+    this.create_at,
     this.user_id,
     this.isAdmin,
     this.department_id,
@@ -26,6 +28,8 @@ class  Users{
     user_name: json["user_name"],
     user_id: json["user_id"],
     updated: json["updated"],
+    create_at: json["create_at"],
+    create_by: json["create_by"],
     api: json["api"],
     isAdmin: json["isAdmin"],
   );
@@ -37,6 +41,8 @@ class  Users{
       'department_id': department_id,
       'user_email': user_email,
       'isAdmin': isAdmin,
+      'create_by': create_by,
+      "create_at": create_at,
       'user_description': user_description,
       'user_name': user_name,
       'user_id': user_id,
@@ -56,6 +62,8 @@ class  Users{
       'user_name': user_name,
       'user_id': user_id,
       "updated": updated,
+      'create_by': create_by,
+      "create_at": create_at,
       "api": api,    };
   }
 }

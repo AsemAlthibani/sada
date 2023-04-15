@@ -8,12 +8,12 @@ class PostDataFirestoreController extends ChangeNotifier {
   final DatabaseHelper _databaseHelper=DatabaseHelper();
 
   postTaskToFirebase()async{
-    List<Task> taskList = await _databaseHelper.retrieveTaskToFirebaseFromDb();
+    List<Task> taskList = await _databaseHelper.retrieveTaskFromDb('SELECT * FROM task where api=0 ');
     final CollectionReference profileList = FirebaseFirestore.instance.collection("TaskEmployees");
     return await profileList.doc().set(taskList);
   }
   updateTaskToFirebase()async{
-    List<Task> taskList = await _databaseHelper.retrieveTaskToFirebaseUpdateFromDb();
+    List<Task> taskList = await _databaseHelper.retrieveTaskFromDb('SELECT * FROM task where updated=0 ');
     final CollectionReference profileList = FirebaseFirestore.instance.collection("TaskEmployees");
 //    return await profileList.doc().update(taskList);
   }
