@@ -1,105 +1,44 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sada/model/database_model/note.dart';
+import 'package:sada/model/database_model/users.dart';
 import '../../model/database_helper.dart';
+import '../../model/database_model/department.dart';
 import '../../model/database_model/employees.dart';
+import '../../model/database_model/reports_uploaded.dart';
 import '../../model/database_model/task.dart';
 
 
 class GetDataFirestoreController extends ChangeNotifier {
   final DatabaseHelper _databaseHelper=DatabaseHelper();
 
-  Future<void> postTaskToFirebase()async{
-    List<Task> taskList = await _databaseHelper.retrieveTaskFromDb('SELECT * FROM task where api=0 ');
-    var taskMap = taskList.map((dynamic) =>
-    {
-      'offline_id': dynamic.id,
-      'task_name': dynamic.task_name,
-      'task_description': dynamic.task_description,
-      'department_id': dynamic.department_id,
-      'end_date': dynamic.end_date,
-      'date': dynamic.date,
-      "not": dynamic.not,
-      "enable_admin": dynamic.enable_admin==1?true:false,
-      'start_date':dynamic.start_date,
-      'task_completed': dynamic.task_completed==1?true:false,
-      'for_admin': dynamic.for_admin==1?true:false,
-      'create_by': dynamic.create_by,
-      'completion_rate': dynamic.completion_rate,
-      'emp_name': dynamic.emp_name,
-      'emp_id': dynamic.emp_id,
-      'create_by_name': dynamic.create_by_name,
-      "updated": dynamic.updated,
-      "api": dynamic.api,
-      "emp_add": false,
-      "admin_add": false,
-    }).toList();
 
-    CollectionReference collectionRef = FirebaseFirestore.instance.collection('TaskEmployees');
-    List documentIds = [];
-    for (Map<String, dynamic> data in taskMap) {
-      print(data["offline_id"]);
-      DocumentReference docRef = await collectionRef.add(data);
-      documentIds.add([docRef.id,data["offline_id"]]);
-      await docRef.update({'id': docRef.id});
-    }
-    for(var data in documentIds){
-      await _databaseHelper.updateItemTabletDb("task", data[1], "api=1,online_id='${data[0]}'");
-    }
-  }
-  Future<void> postTaskUpdateToFirebase()async{
-    List<Task> taskList = await _databaseHelper.retrieveTaskFromDb('SELECT * FROM task where updated=0 ');
-    var taskMap = taskList.map((dynamic) =>
-    {
-      'offline_id': dynamic.id,
-      'task_name': dynamic.task_name,
-      'task_description': dynamic.task_description,
-      'department_id': dynamic.department_id,
-      'end_date': dynamic.end_date,
-      'date': dynamic.date,
-      "not": dynamic.not,
-      "enable_admin": dynamic.enable_admin==1?true:false,
-      'start_date':dynamic.start_date,
-      'task_completed': dynamic.task_completed==1?true:false,
-      'for_admin': dynamic.for_admin==1?true:false,
-      'create_by': dynamic.create_by,
-      'completion_rate': dynamic.completion_rate,
-      'emp_name': dynamic.emp_name,
-      'emp_id': dynamic.emp_id,
-      'create_by_name': dynamic.create_by_name,
-      "updated": dynamic.updated,
-      "api": dynamic.api,
-      "emp_add": false,
-      "admin_add": false,
-    }).toList();
-    CollectionReference collectionRef = FirebaseFirestore.instance.collection('TaskEmployees');
-    List documentIds = [];
-    for (Map<String, dynamic> data in taskMap) {
-      print(data["offline_id"]);
-      DocumentReference docRef = await collectionRef.add(data);
-      documentIds.add([docRef.id,data["offline_id"]]);
-      await docRef.update({'id': docRef.id});
-    }
-    for(var data in documentIds){
-      await _databaseHelper.updateItemTabletDb("task", data[1], "api=1,online_id='${data[0]}'");
-    }
-  }
-  Future<void> updateEmployeesData()async{
-    SharedPreferences preferences = await SharedPreferences.getInstance();
-    bool? isAdmin=preferences.getBool("isAdmin");
-    isAdmin??=false;
+  Future<void> updateEmployeesData(isAdmin)async{
     List jsonData=[];
-    await _databaseHelper.deleteItemsDb("employees");
-    await _databaseHelper.deleteSequenceItemsDb("employees");
     List<Employees> newData=[];
-   if(isAdmin){
+    List<Users> newDataUser=[];
+    List<Employees> addData = [];
+    List<Users> addDataUsers = [];
+    List<Employees> oldData = await _databaseHelper.retrieveEmployeesFromDb('SELECT * FROM employees');
+    List<Users> oldDataUsers = await _databaseHelper.retrieveUsersFromDb('SELECT * FROM users');
+    if(isAdmin){
      await FirebaseFirestore.instance.collection('Users').get().then((QuerySnapshot querySnapshot) => {
        querySnapshot.docs.forEach((doc) {
          jsonData.add(doc.data());
        }),
      });
-   }else{
+     for (var json in jsonData) {
+       newDataUser.add(Users.fromMapUpdate(json));
+     }
+     for (var item in newDataUser) {
+       List<Users> results = oldDataUsers.where((user) =>
+           user.user_id.toString().toLowerCase().contains(item.user_id.toString().toLowerCase())).toList();
+       if (results.isEmpty) {
+         addDataUsers.add(item);
+       }
+     }
+     await _databaseHelper.updateDatabase("users",addDataUsers);
+    }else{
      await FirebaseFirestore.instance.collection('Users').where("isAdmin" ,isEqualTo: false).get().then((QuerySnapshot querySnapshot) => {
        querySnapshot.docs.forEach((doc) {
          jsonData.add(doc.data());
@@ -109,30 +48,76 @@ class GetDataFirestoreController extends ChangeNotifier {
     for (var json in jsonData) {
       newData.add(Employees.fromMapUpdate(json));
     }
-    await _databaseHelper.updateDatabase("employees",newData);
+    for (var item in newData) {
+      List<Employees> results = oldData.where((user) =>
+          user.user_id.toString().toLowerCase().contains(item.user_id.toString().toLowerCase())).toList();
+      if (results.isEmpty) {
+        addData.add(item);
+      }
+    }
+    await _databaseHelper.updateDatabase("employees",addData);
   }
   Future<void> getTaskFromFirebase(userId)async{
+
     List jsonData=[];
     List<Task> newData=[];
+    List<Task> addData = [];
+    List<Task> oldData = await _databaseHelper.retrieveTaskFromDb('SELECT * FROM task');
     var collectionReference = FirebaseFirestore.instance.collection('TaskEmployees');
-    await collectionReference.where("emp_add" ,isEqualTo: false)
-    .where("emp_id" ,isEqualTo: userId).where("create_by" ,isNotEqualTo: userId).where("enable_admin" ,isEqualTo: true)
+    await collectionReference.where("emp_id" ,isNotEqualTo: userId).where("create_by" ,isEqualTo: userId).where("enable_admin",isEqualTo: true).get().then((QuerySnapshot querySnapshot) => {
+      querySnapshot.docs.forEach((doc) {
+        jsonData.add(doc.data());
+      }),
+    });
+    await collectionReference.where("emp_id" ,isEqualTo: userId).where("create_by" ,isNotEqualTo: userId).where("enable_admin" ,isEqualTo: true)
         .get().then((QuerySnapshot querySnapshot) => {
         querySnapshot.docs.forEach((doc) {
           jsonData.add(doc.data());
         }),
       });
+
     for (var json in jsonData) {
       newData.add(Task.froEmpMap(json));
     }
-    await _databaseHelper.updateDatabase("task",newData);
+    for (var item in newData) {
+      List<Task> results = oldData.where((user) =>
+          user.online_id.toString().toLowerCase().contains(item.online_id.toString().toLowerCase())).toList();
+      if (results.isEmpty) {
+        addData.add(item);
+      }
+    }
+    await _databaseHelper.updateDatabase("task",addData);
+  }
+  Future<void> getNoteFromFirebase(userId)async{
+    List jsonData=[];
+    List<AdminNote> newData=[];
+    List<AdminNote> addData = [];
+    List<AdminNote> oldData = await _databaseHelper.retrieveAdminNoteFromDb('SELECT * FROM admin_note');
+    var collectionReference = FirebaseFirestore.instance.collection('AdminNote');
+    await collectionReference.where("emp_id" ,isEqualTo: userId).get().then((QuerySnapshot querySnapshot) => {
+      querySnapshot.docs.forEach((doc) {
+        jsonData.add(doc.data());
+      }),
+    });
+    for (var json in jsonData) {
+      newData.add(AdminNote.fromMapGet(json));
+    }
+    for (var item in newData) {
+      List<AdminNote> results = oldData.where((user) =>
+          user.online_id.toString().toLowerCase().contains(item.online_id.toString().toLowerCase())).toList();
+      if (results.isEmpty) {
+        addData.add(item);
+      }
+    }
+    await _databaseHelper.updateDatabase("admin_note",addData);
   }
   Future<void> getTaskForAdminFromFirebase()async{
     List jsonData=[];
     List<Task> newData=[];
+    List<Task> oldData = await _databaseHelper.retrieveTaskFromDb('SELECT * FROM task');
+    List<Task> addData = [];
     var collectionReference = FirebaseFirestore.instance.collection('TaskEmployees');
-    await collectionReference.where("for_admin" ,isEqualTo: true).where("admin_add" ,isEqualTo: false)
-        .where("enable_admin" ,isEqualTo: false)
+    await collectionReference.where("for_admin" ,isEqualTo: true)
         .get().then((QuerySnapshot querySnapshot) => {
       querySnapshot.docs.forEach((doc) {
         jsonData.add(doc.data());
@@ -142,20 +127,69 @@ class GetDataFirestoreController extends ChangeNotifier {
       print("${json["completion_rate"]} completion_rate");
       newData.add(Task.fromMapAdmin(json));
     }
-    await _databaseHelper.updateDatabase("task",newData);
-    for (var json in jsonData) {
-      collectionReference.doc(json["id"]).update({
-        'admin_add': true
-      }).then((value) => print("Document updated")).catchError((error) => print("Failed to update document: $error"));
+    for (var item in newData) {
+      List<Task> results = oldData.where((user) =>
+          user.online_id.toString().toLowerCase().contains(item.online_id.toString().toLowerCase())).toList();
+      if (results.isEmpty) {
+        addData.add(item);
+      }
     }
+    await _databaseHelper.updateDatabase("task",addData);
   }
-  postDataToFirebase(userId,isAdmin)async{
-    await Firebase.initializeApp();
-    await postTaskToFirebase();
-    await updateEmployeesData();
+  Future<void> getDepartmentFromFirebase()async{
+    List jsonData=[];
+    List<Department> oldData = await _databaseHelper.retrieveDepartmentFromDb('SELECT * FROM department');
+    List<Department> newData=[];
+    List<Department> addData=[];
+    await FirebaseFirestore.instance.collection('Department').get().then((QuerySnapshot querySnapshot) => {
+      querySnapshot.docs.forEach((doc) {
+        jsonData.add(doc.data());
+      }),
+    });
+    for (var json in jsonData) {
+      newData.add(Department.fromMapGet(json));
+    }
+    for (var item in newData) {
+      List<Department> results = oldData.where((user) =>
+          user.online_id.toString().toLowerCase().contains(item.online_id.toString().toLowerCase())).toList();
+      if (results.isEmpty) {
+        addData.add(item);
+      }
+    }
+    await _databaseHelper.updateDatabase("department",addData);
+  }
+  Future<void> addReportsUploaded(userId,isAdmin)async{
+    List jsonData=[];
+    List<ReportsUploaded> oldData = await _databaseHelper.retrieveReportsUploadedFromDb('SELECT * FROM reports_uploaded');
+    List<ReportsUploaded> newData=[];
+    List<ReportsUploaded> addData=[];
+    var collectionReference = FirebaseFirestore.instance.collection('ReportsUploaded');
+    await collectionReference.get().then((QuerySnapshot querySnapshot) => {
+      querySnapshot.docs.forEach((doc) {
+        jsonData.add(doc.data());
+      }),
+    });
+    for (var json in jsonData) {
+      newData.add(ReportsUploaded.fromMapGet(json));
+    }
+    for (var item in newData) {
+      List<ReportsUploaded> results = oldData.where((user) =>
+          user.online_id.toString().toLowerCase().contains(item.online_id.toString().toLowerCase())).toList();
+      if (results.isEmpty) {
+        addData.add(item);
+      }
+    }
+    await _databaseHelper.updateDatabase("reports_uploaded",addData);
+  }
+
+  Future<void> postDataToFirebase(userId,isAdmin)async{
+    await updateEmployeesData(isAdmin);
+    await addReportsUploaded(userId,isAdmin);
     await getTaskFromFirebase(userId);
+    await getNoteFromFirebase(userId);
     if(isAdmin){
-    await getTaskForAdminFromFirebase();
+      await getTaskForAdminFromFirebase();
+      await getDepartmentFromFirebase();
     }
   }
 }

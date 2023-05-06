@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sada/model/color_model.dart';
 import '../../../controller/app_data_controller.dart';
-import '../../../controller/drive_upload_controller.dart';
+import '../../../controller/firebase/drive_upload_controller.dart';
 import '../widget/reports_uploaded_list.dart';
+import '../widget/update_task_widget.dart';
 
 
 
@@ -24,9 +26,16 @@ class DriveScreenState extends State<DriveScreen> with TickerProviderStateMixin 
     animationController = AnimationController(
         duration: const Duration(milliseconds: 800), vsync: this);
     final DriveUploadController getDataFirestore = Provider.of<DriveUploadController>(context, listen: false);
-    getDataFirestore.getFileUploaded();
+    final AppDataController appDataListen = Provider.of<AppDataController>(context, listen: false);
+    getDataFirestore.getFileUploaded(appDataListen.userId);
     getDataFirestore.login();
     super.initState();
+  }
+  int statusColor=1;
+  setStatusColor(value){
+    setState(() {
+      statusColor=value;
+    });
   }
 
   @override
@@ -60,16 +69,7 @@ class DriveScreenState extends State<DriveScreen> with TickerProviderStateMixin 
           ),
         ),
         centerTitle: true,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(15.0),
-            child: Icon(
-              Icons.notifications,
-              size: 30,
-              color: ColorsModel.ColorsMineLite,
-            ),
-          )
-        ],
+
       ),
       floatingActionButton:FloatingActionButton(
         onPressed: (){
@@ -83,6 +83,26 @@ class DriveScreenState extends State<DriveScreen> with TickerProviderStateMixin 
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
+                appDataListen.isAdmin!?Container(
+                    width: double.infinity,
+                    height: size.height*0.07,
+                    alignment: Alignment.center,
+                    padding: EdgeInsets.symmetric(horizontal: size.width*0.01,vertical: size.height*0.006),
+                    child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child:Row(children:[
+                          rowButton(size, 'التقارير التي رفعتها', Icons.all_inclusive_outlined, 1, ()async{
+                            setStatusColor(1);
+                            driveUpload.setType(1);
+                            await driveUpload.getFileUploaded(appDataListen.userId);
+                          }),
+                          rowButton(size, 'التقارير التي رفعتها الموظفين', Icons.all_inclusive_outlined, 2, ()async{
+                            setStatusColor(2);
+                            driveUpload.setType(2);
+                            await driveUpload.getFileUploaded(appDataListen.userId);
+                          }),
+                        ]))):Container(),
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
@@ -154,17 +174,16 @@ class DriveScreenState extends State<DriveScreen> with TickerProviderStateMixin 
                           animation: animation,
                           animationController: animationController,
                           itemList: driveUploadController.listReportsUploaded[index],
-                          callBack: () {
-
-                          },
+                          callBack: () async{
+                            downloadReportsUploaded(context,size,driveUploadController.listReportsUploaded[index]);
+                            },
                         ):verticalReportsUploadedListView(
                           animation: animation,
                           animationController: animationController,
                           itemList: driveUploadController.listReportsUploaded[index],
                           callBack: () {
-
-                          },
-                        );
+                            downloadReportsUploaded(context,size,driveUploadController.listReportsUploaded[index]);
+                          });
                       },
                     ),
                   ):
@@ -181,7 +200,44 @@ class DriveScreenState extends State<DriveScreen> with TickerProviderStateMixin 
                           fontSize: size.width * 0.06,
                           fontWeight: FontWeight.w500),
                     ),),
-                )]),
+                )
+              ]),
     );
   }
+  rowButton(size,myText,myIcon,index,onTap){
+    return InkWell(
+        onTap:onTap ,
+        child:  Container(
+          height: size.height*0.08,
+          alignment: Alignment.center,
+          margin: EdgeInsets.symmetric(horizontal: size.width*0.005),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color:ColorsModel.ColorsMineLite,width: 2 ),
+            gradient: LinearGradient(
+              begin: Alignment.center, colors:statusColor==index? [
+              ColorsModel.ColorsMineLite,  ColorsModel.ColorsMineLite]:[
+              ColorsModel.ColorsWhite,  ColorsModel.ColorsWhite],
+            ),                                 ),
+          padding: EdgeInsets.symmetric(horizontal: size.width*0.015),
+          child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Icon(myIcon,
+                  color:   statusColor==index?Colors.white:ColorsModel.ColorsMineLite,),
+                SizedBox(width: size.width*0.015,),
+                Text(
+                  myText,
+                  style: TextStyle(
+                      fontFamily: "TS-Safaa",
+                      color: statusColor==index?Colors.white:ColorsModel.ColorsMineLite,
+                      fontSize: size.height * 0.02,
+                      fontWeight: FontWeight.w600
+                  ),
+                ),
+              ]),
+        ));
+
+  }
+
 }

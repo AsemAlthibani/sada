@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart' hide Image;
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:provider/provider.dart';
-import 'package:sada/screen/small_screen/admin/summry_task.dart';
+import 'package:sada/screen/small_screen/admin/task_report_screen.dart';
 import '../../../controller/firebase/get_data_firestore_controller.dart';
+import '../../../controller/firebase/post_data_firestore_controller.dart';
 import '../../../model/toast_model.dart';
 import '../../screen_landing/landing_screen.dart';
 import 'package:sada/controller/app_data_controller.dart';
@@ -37,7 +38,6 @@ class _AdminMenuScreen extends State<AdminMenuScreen> {
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
-    final GetDataFirestoreController getDataFirestore = Provider.of<GetDataFirestoreController>(context, listen: true);
     final AppDataController appData = Provider.of<AppDataController>(context, listen: true);
     return Scaffold(
       body:   Container(
@@ -117,20 +117,17 @@ class _AdminMenuScreen extends State<AdminMenuScreen> {
                     children: [
                       myButton3("مزامنة",
                       Icons.sync_outlined, () async{
-                            try {
                               bool result = await InternetConnectionChecker().hasConnection;
                               showUpdateProgress(context);
                               if(result){
-                                await getDataFirestore.postDataToFirebase(appData.userId,appData.isAdmin);
+                                await Provider.of<PostDataFirestoreController>(context, listen: false).postDataToFirebase(appData.userId,appData.isAdmin);
+                                await Provider.of<GetDataFirestoreController>(context, listen: false).postDataToFirebase(appData.userId,appData.isAdmin);
                                 Navigator.pop(context);
                                 ToastModel().getToastModel("تمت المزامنة");
                               }else{
                                 Navigator.pop(context);
                                 ToastModel().getToastModel("الرجاء الارتباط بالانترنيت");
                               }
-                            } catch (e) {
-                              print(e.toString());
-                            }
 
                       }, size),
                       myButton3("المهمات",
@@ -141,27 +138,27 @@ class _AdminMenuScreen extends State<AdminMenuScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      myButton("رفع التقارير",
-                          Icons.paste_rounded, () {
-                            pushToScreen(context,DriveScreen());
-                          }, size),
-                      myButton("الاعدادات",
-                          Icons.settings_applications_sharp, () {
-                            pushToScreen(context,SettingsScreenLanding());
-                          }, size),],),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      myButton3("تقارير المهام",
+                      myButton("تقارير المهام",
                           Icons.bar_chart_outlined, () async{
-                            pushToScreen(context,BarChartSample3());
+                            pushToScreen(context,TaskReportScreen());
 
                           }, size),
-                      myButton3("المهمات المشاركة",
+                      myButton("المهمات المشاركة",
                           Icons.task_outlined, () {
                             pushToScreen(context,AdminTaskScreenLanding());
                           }, size),
                     ],),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      myButton3("التقارير",
+                          Icons.paste_rounded, () {
+                            pushToScreen(context,DriveScreen());
+                          }, size),
+                      myButton3("الاعدادات",
+                          Icons.settings, () {
+                            pushToScreen(context,SettingsScreenLanding());
+                          }, size),],),
                 ],)
             ),
           ],),

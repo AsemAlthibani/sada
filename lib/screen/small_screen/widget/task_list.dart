@@ -11,12 +11,14 @@ class TaskListView extends StatelessWidget {
         this.itemList,
         this.callBack,
         this.callBack2,
+        this.callBack3,
         this.animationController,
         this.animation})
       : super(key: key);
 
   final VoidCallback? callBack;
   final VoidCallback? callBack2;
+  final VoidCallback? callBack3;
   Task? itemList;
   final AnimationController? animationController;
   final Animation<double>? animation;
@@ -33,8 +35,11 @@ class TaskListView extends StatelessWidget {
           child: Transform(
             transform: Matrix4.translationValues(
                 0.0, 20 * (1.0 - animation!.value), 0.0),
-            child: InkWell(
+            child: Stack(
+                fit: StackFit.passthrough,
+                children: [InkWell(
               onTap: callBack,
+                    onLongPress: callBack3,
               child:
               SizedBox(
                   height: size.height*0.2,
@@ -211,7 +216,30 @@ class TaskListView extends StatelessWidget {
 
                         )
                     ),)),
-            ),
+                  itemList!.new_add==0?Positioned(
+                      top:size.height * 0.08,
+                      left: size.width * 0.03,
+                      child:Container(
+                        width: size.width * 0.07,
+                        height: size.width * 0.04,
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: Colors.red
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          "جديد",
+                          style:TextStyle(
+                            color: ColorsModel.ColorsWhite,
+                            fontFamily: "TS-Safaa",
+                            fontSize: size.width * 0.022,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
+                  ):Container(),
+
+            ]))
         );
       },
     );
@@ -223,12 +251,14 @@ class verticalTaskListView extends StatelessWidget {
         this.itemList,
         this.callBack,
         this.callBack2,
+        this.callBack3,
         this.animationController,
         this.animation})
       : super(key: key);
 
   final VoidCallback? callBack;
   final VoidCallback? callBack2;
+  final VoidCallback? callBack3;
   var itemList;
   final AnimationController? animationController;
   final Animation<double>? animation;
@@ -245,9 +275,12 @@ class verticalTaskListView extends StatelessWidget {
           child: Transform(
             transform: Matrix4.translationValues(
                 0.0, 20 * (1.0 - animation!.value), 0.0),
-            child: InkWell(
+            child: Stack(
+                fit: StackFit.passthrough,
+                children: [InkWell(
                 onTap: callBack,
-                child:
+                    onLongPress: callBack3,
+                    child:
                 SizedBox(
                   height: size.height*0.2,
                   child: Container(
@@ -405,13 +438,36 @@ class verticalTaskListView extends StatelessWidget {
                                  ),),
                              ],
                            )
-
                           ]
 
                       ),
                           ])
                   ),)),
-          ),
+                  itemList!.new_add==0?Positioned(
+                      top:size.height * 0.07,
+                      left: size.width * 0.03,
+                      child:Container(
+                        width: size.width * 0.07,
+                        height: size.width * 0.04,
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: Colors.red
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          "جديد",
+                          style:TextStyle(
+                            color: ColorsModel.ColorsWhite,
+                            fontFamily: "TS-Safaa",
+                            fontSize: size.width * 0.022,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
+                  ):Container(),
+
+                ]))
+        ,
         );
       },
     );

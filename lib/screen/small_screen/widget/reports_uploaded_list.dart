@@ -3,6 +3,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:sada/model/color_model.dart';
 
+import '../../../model/database_model/reports_uploaded.dart';
+
 class ReportsUploadedListView extends StatelessWidget {
   ReportsUploadedListView(
       {Key? key,
@@ -13,7 +15,7 @@ class ReportsUploadedListView extends StatelessWidget {
       : super(key: key);
 
   final VoidCallback? callBack;
-  var itemList;
+  ReportsUploaded? itemList;
   final AnimationController? animationController;
   final Animation<double>? animation;
 
@@ -29,9 +31,7 @@ class ReportsUploadedListView extends StatelessWidget {
             transform: Matrix4.translationValues(
                 0.0, 50 * (1.0 - animation!.value), 0.0),
             child: InkWell(
-              onTap: () async {
-
-              },
+              onTap: callBack,
               child:
               Container(
                   margin: const EdgeInsets.symmetric(
@@ -84,7 +84,7 @@ class ReportsUploadedListView extends StatelessWidget {
                                 )),
                             Padding(padding: EdgeInsets.symmetric(vertical: size.height*0.01,horizontal: size.width*0.01,),
                                 child: Text(
-                                  itemList.file_name,
+                                  itemList!.file_name,
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 2,
                                   style: TextStyle(
@@ -98,7 +98,7 @@ class ReportsUploadedListView extends StatelessWidget {
                             Padding(
                                 padding: EdgeInsets.symmetric(horizontal: size.width*0.02,),
                                 child: Text(
-                                  DateFormat("hh:mm yyyy-MM-dd",'en').format(DateTime.parse(itemList.date)).toString(),
+                                  DateFormat("hh:mm yyyy-MM-dd",'en').format(DateTime.parse(itemList!.date)).toString(),
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
                                   style: TextStyle(
@@ -127,7 +127,7 @@ class verticalReportsUploadedListView extends StatelessWidget {
       : super(key: key);
 
   final VoidCallback? callBack;
-  var itemList;
+  ReportsUploaded? itemList;
   final AnimationController? animationController;
   final Animation<double>? animation;
 
@@ -143,9 +143,7 @@ class verticalReportsUploadedListView extends StatelessWidget {
             transform: Matrix4.translationValues(
                 0.0, 50 * (1.0 - animation!.value), 0.0),
             child: InkWell(
-              onTap: () async {
-
-              },
+              onTap: callBack,
               child:
               Container(
                   margin: const EdgeInsets.symmetric(
@@ -199,7 +197,7 @@ class verticalReportsUploadedListView extends StatelessWidget {
                              children: [
                             Padding(padding: EdgeInsets.symmetric(vertical: size.height*0.0,horizontal: size.width*0.01,),
                                 child: Text(
-                                  itemList.file_name,
+                                  itemList!.file_name,
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 2,
                                   style: TextStyle(
@@ -214,7 +212,7 @@ class verticalReportsUploadedListView extends StatelessWidget {
                             Padding(
                                 padding: EdgeInsets.symmetric(horizontal: size.width*0.02,),
                                 child: Text(
-                                  DateFormat("hh:mm yyyy-MM-dd",'en').format(DateTime.parse(itemList.date)).toString(),
+                                  DateFormat("hh:mm yyyy-MM-dd",'en').format(DateTime.parse(itemList!.date)).toString(),
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
                                   style: TextStyle(

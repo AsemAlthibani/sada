@@ -1,11 +1,15 @@
+import 'package:provider/provider.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'dart:io' show Platform;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
-import 'package:shared_preferences_android/shared_preferences_android.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'controller/firebase/get_data_firestore_controller.dart';
+import 'controller/firebase/post_data_firestore_controller.dart';
 
-import 'model/toast_model.dart'; //For Android devices
+
 FlutterLocalNotificationsPlugin   flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
 const rescheduledTaskKey = "be.tramckrijte.workmanagerExample.rescheduledTask";
@@ -27,19 +31,20 @@ void callbackDispatcher(context) async {
 
     final prefs = await SharedPreferences.getInstance();
 
-    String? first_name = prefs.getString('first_name');
+    String? displayName = prefs.getString('displayName');
       switch (task) {
         case rescheduledTaskKey:
           final bool? value = prefs.getBool('Sync');
           bool? PosNotification = prefs.getBool('PosNotification');
+          var userId=prefs.getString("userId");
+          bool? isAdmin=prefs.getBool("isAdmin");
+          isAdmin??=false;
           if(value!) {
-            String? state = prefs.getString('biller_id');
-            String? user_id = prefs.getString('id');
-            String? warehouse_id = prefs.getString('warehouse_id');
-            PosNotification??=false;
-          //  await updateDatabaseSyncViewModelDio.UpdateSynchronizationDatabase(user_id,warehouse_id);
+            PosNotification??=true;
+            await Provider.of<PostDataFirestoreController>(context, listen: false).postDataToFirebase(userId,isAdmin);
+            await Provider.of<GetDataFirestoreController>(context, listen: false).postDataToFirebase(userId,isAdmin);
             if(!PosNotification) {
-              await showNotification('لقد تمت مزامنة مبيعاتك الى النظام وتحديث بيانات التطبيق',"مرحبا $first_name",);
+              await showNotification('تمت مزامنة بيانتك',"مرحبا $displayName",);
             }
           }
           break;
@@ -55,13 +60,13 @@ print("hhhhhhhhhhhhhhhhhhhhhhhhhh");
   AndroidNotificationDetails androidPlatformChannelSpecifics =
   AndroidNotificationDetails(
     '0',
-    'Arkan Pos',
-    channelDescription:"Arkan Pos Notification",
+    'Sada',
+    channelDescription:"Sada Notification",
     importance: Importance.max,
     priority: Priority.high,
     playSound: true,
     enableVibration: true,
-    largeIcon: DrawableResourceAndroidBitmap('@mipmap/home'),
+    largeIcon: DrawableResourceAndroidBitmap('@mipmap/sada2'),
   );
   var platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
@@ -75,3 +80,10 @@ print("hhhhhhhhhhhhhhhhhhhhhhhhhh");
 print("nnnnnnnnnnnnnnnnnnnnnnnnnnnn");
 }
 
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // If you're going to use other Firebase services in the background, such as Firestore,
+  // make sure you call `initializeApp` before using other Firebase services.
+  await Firebase.initializeApp();
+
+  print("Handling a background message: ${message.messageId}");
+}

@@ -3,10 +3,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sada/model/database_model/employees.dart';
+import 'package:sada/model/database_model/users.dart';
 import 'package:sada/screen/small_screen/widget/custom_progress_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../model/database_helper.dart';
+import '../../model/database_model/department.dart';
+import '../../model/database_model/note.dart';
+import '../../model/database_model/reports_uploaded.dart';
+import '../../model/database_model/task.dart';
 import '../../model/toast_model.dart';
 
 
@@ -72,7 +77,6 @@ class UserController extends ChangeNotifier {
       password: password.text,
     );
     }
-
     final User? users = FirebaseAuth.instance.currentUser;
     userId = users!.uid;
     print(photoURL.toString());
@@ -86,7 +90,7 @@ class UserController extends ChangeNotifier {
     print(dataList);
     if(dataList.isEmpty){
       print("isNotEmpty");
-      email.text=users!.email!;
+      email.text=users.email!;
       username.text=users.displayName!;
       email.text=users.email!;
       photoURL=users.photoURL!;
@@ -97,7 +101,13 @@ class UserController extends ChangeNotifier {
     preferences.setString("userId", dataList.last["user_id"].toString());
     preferences.setString("headersUser", headersUser.toString());
     preferences.setBool("isAdmin", dataList.last["isAdmin"]);
-      await addEmployees(dataList.last["isAdmin"]);
+    await addEmployees(dataList.last["isAdmin"]);
+    await addTask(dataList.last["user_id"],dataList.last["isAdmin"]);
+    await addReportsUploaded(dataList.last["user_id"],dataList.last["isAdmin"]);
+    await addAdminNot(dataList.last["user_id"],dataList.last["isAdmin"]);
+    if(dataList.last["isAdmin"]){
+      await addDepartment();
+    }
     }} on FirebaseAuthException catch (e) {
       if (e.code == 'wrong-password') {
         print('The password provided is too weak.');
@@ -111,6 +121,10 @@ class UserController extends ChangeNotifier {
         print('The account already exists for that email.');
         Navigator.pop(context);
         ToastModel().getToastModel("البريد الاليكتروني خاطئ ");
+      } else if (e.code == 'user-not-found') {
+        print('The account already exists for that email.');
+        Navigator.pop(context);
+        ToastModel().getToastModel("المستخدم غير موجود");
       }else{
         print(e.code);
       }
@@ -177,23 +191,105 @@ class UserController extends ChangeNotifier {
       "user_description": description.text,
       "department_id": department_id
     });}
-  Future<void> addData(userId)async {
 
-    return;
-  }
-  addEmployees(isAdmin)async{
+  addTask(userId,isAdmin)async{
     List jsonData=[];
-    await _databaseHelper.deleteItemsDb("employees");
-    await _databaseHelper.deleteSequenceItemsDb("employees");
-    List<Employees> newData=[];
+    await _databaseHelper.deleteItemsDb("task");
+    await _databaseHelper.deleteSequenceItemsDb("task");
+    List<Task> newData=[];
+    var collectionReference = FirebaseFirestore.instance.collection('TaskEmployees');
     if(isAdmin){
-      await FirebaseFirestore.instance.collection('Users').get().then((QuerySnapshot querySnapshot) => {
+      await collectionReference.get().then((QuerySnapshot querySnapshot) => {
         querySnapshot.docs.forEach((doc) {
           jsonData.add(doc.data());
         }),
       });
     }else{
-      await FirebaseFirestore.instance.collection('Users').where("isAdmin" ,isEqualTo: false).get().then((QuerySnapshot querySnapshot) => {
+    await collectionReference.where("emp_id" ,isEqualTo: userId).where("create_by" ,isEqualTo: userId).get().then((QuerySnapshot querySnapshot) => {
+        querySnapshot.docs.forEach((doc) {
+          jsonData.add(doc.data());
+        }),
+      });
+    await collectionReference.where("emp_id" ,isEqualTo: userId).where("create_by" ,isNotEqualTo: userId).where("enable_admin",isEqualTo: true).get().then((QuerySnapshot querySnapshot) => {
+        querySnapshot.docs.forEach((doc) {
+          jsonData.add(doc.data());
+        }),
+      });
+    await collectionReference.where("emp_id" ,isNotEqualTo: userId).where("create_by" ,isEqualTo: userId).get().then((QuerySnapshot querySnapshot) => {
+      querySnapshot.docs.forEach((doc) {
+        jsonData.add(doc.data());
+      }),
+    });
+    }
+    for (var json in jsonData) {
+      newData.add(Task.fromMapGet(json));
+    }
+
+    await _databaseHelper.updateDatabase("task",newData);
+  }
+  addReportsUploaded(userId,isAdmin)async{
+    List jsonData=[];
+    await _databaseHelper.deleteItemsDb("reports_uploaded");
+    await _databaseHelper.deleteSequenceItemsDb("reports_uploaded");
+    List<ReportsUploaded> newData=[];
+    var collectionReference = FirebaseFirestore.instance.collection('ReportsUploaded');
+    await collectionReference.where("create_by" ,isEqualTo: userId).get().then((QuerySnapshot querySnapshot) => {
+      querySnapshot.docs.forEach((doc) {
+        jsonData.add(doc.data());
+      }),
+    });
+    for (var json in jsonData) {
+      newData.add(ReportsUploaded.fromMapGet(json));
+    }
+    await _databaseHelper.updateDatabase("reports_uploaded",newData);
+  }
+  addAdminNot(userId,isAdmin)async{
+    List jsonData=[];
+    await _databaseHelper.deleteItemsDb("admin_note");
+    await _databaseHelper.deleteSequenceItemsDb("admin_note");
+    List<AdminNote> newData=[];
+    var collectionReference = FirebaseFirestore.instance.collection('AdminNote');
+    if(isAdmin){
+    await collectionReference.where("create_by" ,isEqualTo: userId).get().then((QuerySnapshot querySnapshot) => {
+      querySnapshot.docs.forEach((doc) {
+        jsonData.add(doc.data());
+      }),
+    });
+    }else{
+      await collectionReference.where("emp_id" ,isEqualTo: userId).get().then((QuerySnapshot querySnapshot) => {
+        querySnapshot.docs.forEach((doc) {
+          jsonData.add(doc.data());
+        }),
+      });
+    }
+    for (var json in jsonData) {
+      newData.add(AdminNote.fromMapGet(json));
+    }
+    await _databaseHelper.updateDatabase("admin_note",newData);
+  }
+  addEmployees(isAdmin)async{
+    List jsonData=[];
+    await _databaseHelper.deleteItemsDb("employees");
+    await _databaseHelper.deleteSequenceItemsDb("employees");
+    await _databaseHelper.deleteItemsDb("users");
+    await _databaseHelper.deleteSequenceItemsDb("users");
+    List<Employees> newData=[];
+    List<Users> newDataUser=[];
+    var collectionReference = FirebaseFirestore.instance.collection('Users');
+
+    if(isAdmin){
+      await collectionReference.get().then((QuerySnapshot querySnapshot) => {
+        querySnapshot.docs.forEach((doc) async{
+          jsonData.add(doc.data());
+        }),
+      });
+
+      for (var json in jsonData) {
+        newDataUser.add(Users.fromMapUpdate(json));
+      }
+      await _databaseHelper.updateDatabase("users",newDataUser);
+    }else{
+      await collectionReference.where("isAdmin" ,isEqualTo: false).get().then((QuerySnapshot querySnapshot) => {
         querySnapshot.docs.forEach((doc) {
           jsonData.add(doc.data());
         }),
@@ -203,7 +299,21 @@ class UserController extends ChangeNotifier {
       newData.add(Employees.fromMapUpdate(json));
     }
     await _databaseHelper.updateDatabase("employees",newData);
-
+  }
+  addDepartment()async{
+    List jsonData=[];
+    await _databaseHelper.deleteItemsDb("department");
+    await _databaseHelper.deleteSequenceItemsDb("department");
+    List<Department> newData=[];
+      await FirebaseFirestore.instance.collection('Department').get().then((QuerySnapshot querySnapshot) => {
+        querySnapshot.docs.forEach((doc) {
+          jsonData.add(doc.data());
+        }),
+      });
+    for (var json in jsonData) {
+      newData.add(Department.fromMapGet(json));
+    }
+    await _databaseHelper.updateDatabase("department",newData);
   }
   restData(){
     description.text="";
@@ -212,27 +322,4 @@ class UserController extends ChangeNotifier {
     password.text="";
     username.text="";
   }
-}
-/*
-     preferences.setString("photoURL", photoURL.toString());
-      preferences.setString("displayName", username.text.toString());
-      preferences.setString("emailUser", email.text.toString());
-      preferences.setString("accessToken", accessToken.toString());
-
- */
-
-Future<void> userSetup(String user_name,user_password, user_phone, user_email, isAdmin,user_description,department_id) async {
-  CollectionReference users = FirebaseFirestore.instance.collection('Users');
-  FirebaseAuth auth = FirebaseAuth.instance;
-  String uid = auth.currentUser!.uid.toString();
-  users.add({
-    'user_name': user_name,
-    'user_id': uid,
-    "user_phone": user_phone,
-    "user_email": user_email,
-    "user_password": user_password,
-    "isAdmin": true,
-    "user_description": user_description,
-    "department_id": department_id});
-  return;
 }

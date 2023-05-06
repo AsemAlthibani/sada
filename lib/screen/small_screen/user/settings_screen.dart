@@ -10,6 +10,8 @@ import 'package:workmanager/workmanager.dart';
 import 'package:sada/controller/app_data_controller.dart';
 import 'package:sada/workmanager_callback.dart';
 
+import '../widget/sync_duration_dialog.dart';
+
 
 
 
@@ -26,10 +28,24 @@ class _SettingsScreen extends State<SettingsScreen> {
   var TimerSyncDuration;
   SharedPreferences? prefs;
   @override
+  void initState() {
+    super.initState();
+    initiala();
+  }
+
+  void initiala() async {
+    prefs = await SharedPreferences.getInstance();
+    setState(() {
+      isSwitched10 = prefs?.getBool("Sync");
+      isSwitched11 = prefs?.getBool("PosNotification");
+      isSwitched11 ??= false;
+      isSwitched10 ??= false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    Size size = MediaQuery
-        .of(context)
-        .size;
+    Size size = MediaQuery.of(context).size;
     final AppDataController appData = Provider.of<AppDataController>(context, listen: true);
     bool isorientation = MediaQuery.of(context).orientation == Orientation.landscape;
 
@@ -164,9 +180,9 @@ class _SettingsScreen extends State<SettingsScreen> {
                       });
                     }),
 
-                    customInsideBodyV2(size, isorientation, "مدة المزامنة",  "1 ساعة",
+                    customInsideBodyV2(size, isorientation, "مدة المزامنة",  appData.syncDuration??"1 ساعة",
                         Icons.cloud_sync_sharp, Icons.arrow_back_ios_new_sharp, (){
-                          //SyncDurations(context,size);
+                          SyncDurations(context);
                         }),
                     customInsideBodyV2(size, isorientation,"تمت المزامنة في ", TimerSyncDuration == null
                         ? "1 "

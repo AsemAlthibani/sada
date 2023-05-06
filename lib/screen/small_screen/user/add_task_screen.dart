@@ -51,16 +51,6 @@ class _AddTaskScreen extends State<AddTaskScreen> {
             ),
           ),
           centerTitle: true,
-          actions: [
-            Padding(
-              padding: const EdgeInsets.all(15.0),
-              child: Icon(
-                Icons.notifications,
-                size: 30,
-                color: ColorsModel.ColorsMineLite,
-              ),
-            )
-          ],
         ),
       body: SingleChildScrollView(
                   child: Column(

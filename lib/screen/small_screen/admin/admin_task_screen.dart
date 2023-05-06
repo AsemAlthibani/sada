@@ -9,6 +9,8 @@ import 'package:sada/model/toast_model.dart';
 
 import '../../../controller/app_data_controller.dart';
 import '../../screen_landing/landing_screen.dart';
+import '../widget/task_list.dart';
+import '../widget/update_task_widget.dart';
 import 'admin_menu_screen.dart';
 
 
@@ -17,11 +19,14 @@ class AdminTaskScreen extends StatefulWidget {
   @override
   _AdminTaskScreen createState() => _AdminTaskScreen();
 }
-class _AdminTaskScreen extends State<AdminTaskScreen> {
+class _AdminTaskScreen extends State<AdminTaskScreen> with TickerProviderStateMixin {
+  AnimationController? animationController;
 
   @override
   void initState() {
     // TODO: implement initState
+    animationController = AnimationController(
+        duration: const Duration(milliseconds: 800), vsync: this);
     final TaskController taskController = Provider.of<TaskController>(context, listen: false);
     final AppDataController appData = Provider.of<AppDataController>(context, listen: false);
     taskController.restData();
@@ -41,6 +46,7 @@ class _AdminTaskScreen extends State<AdminTaskScreen> {
     Size size = MediaQuery.of(context).size;
     final TaskController taskController = Provider.of<TaskController>(context, listen: false);
     final TaskController taskControllerListen = Provider.of<TaskController>(context, listen: true);
+    final AppDataController appDataListen = Provider.of<AppDataController>(context, listen: true);
     final AppDataController appData = Provider.of<AppDataController>(context, listen: false);
     return Scaffold(
       appBar: AppBar(
@@ -65,19 +71,8 @@ class _AdminTaskScreen extends State<AdminTaskScreen> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(15.0),
-            child: Icon(
-              Icons.notifications,
-              size: 30,
-              color: ColorsModel.ColorsMineLite,
-            ),
-          )
-        ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
+      body: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
       Container(
@@ -89,32 +84,35 @@ class _AdminTaskScreen extends State<AdminTaskScreen> {
       SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child:Row(children:[
-          rowButton(size, 'مهام تم الموافقة عليها', Icons.all_inclusive_outlined, 1, ()async{
+          rowButton(size, 'مهام لم يتم الموافقة عليها', Icons.all_inclusive_outlined, 1, ()async{
             setStatusColor(1);
             taskController.setType(1);
             await taskController.getTaskAdminToList(appData.userId);
             }),
-          rowButton(size, 'مهام لم يتم الموافقة عليها', Icons.all_inclusive_outlined, 2, ()async{
+          rowButton(size, 'مهام تم الموافقة عليها', Icons.all_inclusive_outlined, 2, ()async{
             setStatusColor(2);
             taskController.setType(2);
             await taskController.getTaskAdminToList(appData.userId);
           }),
+
         ]))),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 InkWell(
                   onTap: () {
-                    dateTimeRangePicker(size);
-                    },
-                  child: const Icon(Icons.date_range
+                    // dateTimeRangePicker(size);
+                  },
+                  child:Icon(Icons.date_range,
+                    size: size.width*0.06,
                   ),),
                 Container(
-                    width: size.width*0.9,
+                    width: size.width*0.8,
                     height: size.height * 0.06,
                     margin: EdgeInsets.only(top: size.height * 0.01,bottom: size.height * 0.01),
                     child:
                     TextField(
+                      onChanged: taskController.taskFilter,
                       decoration: InputDecoration(
                         contentPadding:
                         EdgeInsets.symmetric(vertical: size.width * 0.02, horizontal: size.width * 0.05),
@@ -127,118 +125,107 @@ class _AdminTaskScreen extends State<AdminTaskScreen> {
                         ),
                       ),
                     )),
-                 ],
+                InkWell(
+                  borderRadius:
+                  BorderRadius.circular(AppBar().preferredSize.height),
+                  child: Icon(
+                    appDataListen.multipleTask! ? Icons.dashboard : Icons.view_agenda,
+                    size: size.width*0.06,
+                  ),
+                  onTap: () {
+                    appData.setMultipleStateTask();
+                  },
+                ),
+              ],
             ),
-            Container(
-                height: size.height * 0.82,
-                width: size.width,
-                padding: EdgeInsets.symmetric(horizontal: size.width*0.02),
-                child:  ListView.builder(
-                        itemCount: taskControllerListen.taskList.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          return InkWell(
-                              onTap: () async {
-                                print(taskControllerListen.taskList[index].online_id);
-                                taskController.setUpdateData(taskControllerListen.taskList[index],index);
-                                pushToScreen(context,const TaskDetailsScreenLanding(adminShare:true));
-                              },
-                              child: Dismissible(
-                                direction: DismissDirection.endToStart,
-                                background: Container(
-                                  color: ColorsModel.ColorTherdLite,
-                                  alignment: Alignment.centerRight,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10.0),
-                                  child: const Icon(Icons.delete_forever),
-                                ),
-                                key: ValueKey<int>(taskControllerListen.taskList[index].id),
-                                onDismissed: (DismissDirection direction) async {
-                                  try {
-                                    return showDialog(
-                                      context: context,
-                                      builder: (BuildContext context) {
-                                        return AlertDialog(
-                                          title: const Text('هل تريد حذف المهمة',
-                                            textAlign: TextAlign.right,),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () {
-                                                Navigator.pop(context);
-                                              },
-                                              child: const Text('الغاء'),
-                                            ),
-                                            TextButton(
-                                              onPressed: () async {
-                                                await taskController.deleteTask(taskControllerListen.taskList[index].id);
-                                                taskControllerListen.taskList.remove(
-                                                    taskControllerListen.taskList[index]);
-                                                Navigator.pop(context);
-                                              },
-                                              child: const Text('موافق'),
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                    );
-                                  }
-                                  catch (e) {
-                                    print(e);
-                                  }
-                                },
-                                child: Card(
-                                    child: ListTile(
-                                      contentPadding: const EdgeInsets.all(8.0),
-                                      leading: InkWell(
-                                        onTap: (){
-                                          taskController.updateTaskCompleted(taskControllerListen.taskList[index]);
-                                          setState(() {
-                                            taskControllerListen.taskList[index].task_completed=1;
-                                          });
-                                        },
-                                        child:Container(
-                                          height: size.height*0.07,
-                                          width: size.height*0.07,
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(100),
-                                            color: taskControllerListen.taskList[index].task_completed==1?ColorsModel.ColorsMineLite:
-                                            ColorsModel.ColorsWhite,
-                                            border: Border.all(color: ColorsModel.ColorsMineLite,width: taskControllerListen.taskList[index].task_completed==1?0:1
-                                            )
-                                          ),
-                                          child: Icon(
-                                            Icons.done_outlined,
-                                            color: taskControllerListen.taskList[index].task_completed==1?ColorsModel.ColorsWhite:ColorsModel.ColorsMineLite,
-                                            size:  size.height*0.04,
-                                          ),
-                                        ) ,),
-                                      title: Text(taskControllerListen.taskList[index].task_name,
-                                        textAlign: TextAlign.right,
-                                        style: TextStyle(
-                                            color: Colors.blueGrey,
-                                            fontSize: isorientation ? size
-                                                .width * 0.02 : size.width *
-                                                0.045,
-                                            fontFamily: "odin-next-lt-w23"),),
-                                      subtitle: Text(
-                                        taskControllerListen.taskList[index].completion_rate.toString(),
-                                        textAlign: TextAlign.right,
-                                        style: TextStyle(
-                                            color: Colors.blueGrey.shade300,
-                                            fontSize: isorientation ? size
-                                                .width * 0.015 : size.width *
-                                                0.04,
-                                            fontFamily: "odin-next-lt-w23"),),
-                                    )
-                                ),
-                              ));
+            Expanded(
+              child:taskControllerListen.taskList.isNotEmpty?GridView(
+                padding: const EdgeInsets.only(
+                    top: 0, left: 12, right: 12),
+                scrollDirection: Axis.vertical,
+                gridDelegate:
+                SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: appDataListen.multipleTask! ? 2 : 1,
+                  mainAxisSpacing: 4.0,
+                  crossAxisSpacing: 12.0,
+                  childAspectRatio: appDataListen.multipleTask! ?1.3:3.7,
+                ),
+                children: List<Widget>.generate(
+                  taskControllerListen.taskList.length,
+                      (int index) {
+                    final int count = taskControllerListen.taskList.length;
+                    final Animation<double> animation =
+                    Tween<double>(begin: 0.0, end: 1.0).animate(
+                      CurvedAnimation(
+                        parent: animationController!,
+                        curve: Interval((1 / count) * index, 1.0,
+                            curve: Curves.fastOutSlowIn),
+                      ),
+                    );
+                    animationController?.forward();
+                    return appDataListen.multipleTask!?TaskListView(
+                      animation: animation,
+                      animationController: animationController,
+                      itemList: taskControllerListen.taskList[index],
+                      callBack: () {
+                        print(taskControllerListen.taskList[index].updated);
+                        //taskController.akjdjs(taskControllerListen.taskList[index].id);
+                        taskController.updateTaskNewAdd(taskControllerListen.taskList[index],index);
+                        taskController.setUpdateData(taskControllerListen.taskList[index],index);
+                        pushToScreen(context,const TaskDetailsScreenLanding(adminShare:true));
+                      },
+                      callBack2: () {
+                        taskController.updateTaskCompleted(taskControllerListen.taskList[index]);
+                        setState(() {
+                          taskControllerListen.taskList[index].task_completed=1;
+                        });
+                      },
+                      callBack3: () {
+                        print("object");
+                        openTaskBottomSheet(context,size,taskControllerListen.taskList[index],index,true);
+                      },
+                    ):verticalTaskListView(
+                      animation: animation,
+                      animationController: animationController,
+                      itemList: taskControllerListen.taskList[index],
+                      callBack: () {
+                        print(taskControllerListen.taskList[index].online_id);
+                        taskController.updateTaskNewAdd(taskControllerListen.taskList[index],index);
+                        taskController.setUpdateData(taskControllerListen.taskList[index],index);
+                        pushToScreen(context,const TaskDetailsScreenLanding(adminShare:true));
                         },
-                      ))
+                      callBack2: () {
+                        taskController.updateTaskCompleted(taskControllerListen.taskList[index]);
+                        setState(() {
+                          taskControllerListen.taskList[index].task_completed=1;
+                        });
+                      },
+                      callBack3: () {
+                        openTaskBottomSheet(context,size,taskControllerListen.taskList[index],index,true);
+                      },
+                    );
+                  },
+                ),
+              ):
+              Container(
+                height: size.height,
+                width: size.width,
+                alignment: Alignment.center,
+                child: Text(
+                  "لايوجد بيانات",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontFamily:"TS-Safaa",
+                      color: Colors.grey.shade800,
+                      fontSize: size.width * 0.06,
+                      fontWeight: FontWeight.w500),
+                ),)
 
+              ,
+            )
           ],
         ),
-      ),
-
-         );
+    );
   }
 
   dateTimeRangePicker(size) async {

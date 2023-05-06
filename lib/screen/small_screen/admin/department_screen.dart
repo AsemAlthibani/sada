@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sada/controller/app_data_controller.dart';
-import 'package:sada/model/database_model/department.dart';
+import 'package:sada/screen/small_screen/widget/department_list.dart';
 import '../../../controller/task_controller.dart';
 import '../../../model/color_model.dart';
 import '../../../model/toast_model.dart';
+import '../widget/update_task_widget.dart';
 
 
 
@@ -12,10 +13,10 @@ class DepartmentScreen extends StatefulWidget {
   @override
   _DepartmentScreen createState() => _DepartmentScreen();
 }
-class _DepartmentScreen extends State<DepartmentScreen> {
+class _DepartmentScreen extends State<DepartmentScreen> with TickerProviderStateMixin {
+  AnimationController? animationController;
 
-  List<Department> departmentList =[];
-  List<Department> _departmentList =[];
+
   @override
   void initState() {
     // TODO: implement initState
@@ -24,11 +25,10 @@ class _DepartmentScreen extends State<DepartmentScreen> {
   }
 
   getDepartmentToList()async{
+    animationController = AnimationController(
+        duration: const Duration(milliseconds: 800), vsync: this);
     final TaskController taskController = Provider.of<TaskController>(context, listen: false);
-    departmentList =await taskController.getDepartmentFromDb();
-    setState(() {
-      _departmentList=departmentList;
-    });
+    await taskController.getDepartmentFromDb();
 }
 
   @override
@@ -36,9 +36,7 @@ class _DepartmentScreen extends State<DepartmentScreen> {
     bool isorientation = MediaQuery
         .of(context)
         .orientation == Orientation.landscape;
-    Size size = MediaQuery
-        .of(context)
-        .size;
+    Size size = MediaQuery.of(context).size;
     final TaskController taskController = Provider.of<TaskController>(
         context, listen: false);
     final TaskController taskControllerListen = Provider.of<TaskController>(
@@ -66,19 +64,8 @@ class _DepartmentScreen extends State<DepartmentScreen> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(15.0),
-            child: Icon(
-              Icons.notifications,
-              size: 30,
-              color: ColorsModel.ColorsMineLite,
-            ),
-          )
-        ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
+      body: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Row(
@@ -104,85 +91,70 @@ class _DepartmentScreen extends State<DepartmentScreen> {
                     )),
                  ],
             ),
-            Container(
-                height: size.height * 0.82,
+            Expanded(
+              child:taskControllerListen.departmentList.isNotEmpty?GridView(
+                padding: const EdgeInsets.only(
+                    top: 0, left: 12, right: 12),
+                physics: const BouncingScrollPhysics(),
+                scrollDirection: Axis.vertical,
+                gridDelegate:
+                SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount:  1,
+                  mainAxisSpacing: 10.0,
+                  crossAxisSpacing: 12.0,
+                  childAspectRatio: 6,
+                ),
+                children: List<Widget>.generate(
+                  taskControllerListen.departmentList.length,
+                      (int index) {
+                    final int count = taskControllerListen.departmentList.length;
+                    final Animation<double> animation =
+                    Tween<double>(begin: 0.0, end: 1.0).animate(
+                      CurvedAnimation(
+                        parent: animationController!,
+                        curve: Interval((1 / count) * index, 1.0,
+                            curve: Curves.fastOutSlowIn),
+                      ),
+                    );
+                    animationController?.forward();
+                    return DepartmentListView(
+                        animation: animation,
+                        animationController: animationController,
+                        itemList: taskControllerListen.departmentList[index],
+                        callBack: () {
+                          taskController.setDepartment(taskControllerListen.departmentList[index]);
+                          updateDepartment(context, size, setState, isorientation,taskControllerListen.departmentList[index].id) ;
+                        },callBack2: () {
+                          openDepartmentBottomSheet(context,size,taskControllerListen.departmentList[index],index);
+                    });
+                  },
+                ),
+              ):
+              Container(
+                height: size.height,
                 width: size.width,
-                padding: EdgeInsets.symmetric(horizontal: size.width*0.02),
-                child:  ListView.builder(
-                        itemCount: _departmentList.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          return InkWell(
-                              onTap: () async {
-
-                                },
-                              child: Dismissible(
-                                direction: DismissDirection.endToStart,
-                                background: Container(
-                                  color: ColorsModel.ColorTherdLite,
-                                  alignment: Alignment.centerRight,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10.0),
-                                  child: const Icon(Icons.delete_forever),
-                                ),
-                                key: ValueKey<int>(_departmentList[index].id),
-                                onDismissed: (DismissDirection direction) async {
-                                  try {
-                                    return showDialog(
-
-                                      context: context,
-                                      builder: (BuildContext context) {
-                                        return AlertDialog(
-                                          title: const Text('هل تريد حذف الطابعة',
-                                            textAlign: TextAlign.right,),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () {
-                                                Navigator.pop(context);
-                                              },
-                                              child: const Text('الغاء'),
-                                            ),
-                                            TextButton(
-                                              onPressed: () async {
-
-                                                _departmentList.remove(
-                                                    _departmentList[index]);
-                                                Navigator.pop(context);
-                                              },
-                                              child: const Text('موافق'),
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                    );
-                                  }
-                                  catch (e) {
-                                    print(e);
-                                  }
-                                },
-                                child: Card(
-                                    child: ListTile(
-                                      contentPadding: const EdgeInsets.all(8.0),
-                                      title: Text(_departmentList[index].department_name,
-                                        textAlign: TextAlign.right,
-                                        style: TextStyle(
-                                            color: Colors.blueGrey,
-                                            fontSize: isorientation ? size
-                                                .width * 0.02 : size.width *
-                                                0.045,
-                                            fontFamily: "odin-next-lt-w23"),),
-                                    )
-                                ),
-                              ));
-                        },
-                      ))
+                alignment: Alignment.center,
+                child: Text(
+                  "لايوجد بيانات",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontFamily:"TS-Safaa",
+                      color: Colors.grey.shade800,
+                      fontSize: size.width * 0.06,
+                      fontWeight: FontWeight.w500),
+                ),),
+            )
 
           ],
         ),
-      ),
+
       floatingActionButton:
       FloatingActionButton(
           tooltip: 'Increment',
           onPressed: () {
+            setState((){
+              taskController.departmentName.text="";
+            });
             showModalBottomSheet(
                 shape: const RoundedRectangleBorder(
                     borderRadius: BorderRadius.vertical(

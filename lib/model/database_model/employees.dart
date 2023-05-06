@@ -17,11 +17,10 @@ class  Employees{
     employees_name: json["employees_name"],
     user_id: json["user_id"],
     updated: json["updated"],
-    isAdmin: json["isAdmin"],
+    isAdmin: json["isAdmin"]?1:0,
     api: json["api"],
   );
   factory Employees.fromMapUpdate(Map<String, dynamic> json) => Employees(
-    id: json["id"],
     isAdmin:json["isAdmin"]?1:0,
     user_id:json["user_id"],
     employees_name:json["user_name"],

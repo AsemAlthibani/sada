@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide Image;
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:provider/provider.dart';
 import '../../../controller/firebase/get_data_firestore_controller.dart';
+import '../../../controller/firebase/post_data_firestore_controller.dart';
 import '../../../model/toast_model.dart';
 import '../../screen_landing/landing_screen.dart';
 import '../user/settings_screen.dart';
@@ -11,6 +12,7 @@ import 'package:sada/model/color_model.dart';
 import '../widget/custom_progress_dialog.dart';
 import 'add_task_screen.dart';
 import '../user/drive_screen.dart';
+import 'notr_screen.dart';
 
 
 
@@ -36,7 +38,6 @@ class _MenuScreen extends State<MenuScreen> {
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
     final AppDataController appData = Provider.of<AppDataController>(context, listen: true);
-    final GetDataFirestoreController getDataFirestore = Provider.of<GetDataFirestoreController>(context, listen: true);
     return Scaffold(
       body:   Container(
         width: size.width,
@@ -109,7 +110,8 @@ class _MenuScreen extends State<MenuScreen> {
                               bool result = await InternetConnectionChecker().hasConnection;
                               showUpdateProgress(context);
                               if(result){
-                                await getDataFirestore.postDataToFirebase(appData.userId,appData.isAdmin);
+                                await Provider.of<PostDataFirestoreController>(context, listen: false).postDataToFirebase(appData.userId,appData.isAdmin);
+                                await Provider.of<GetDataFirestoreController>(context, listen: false).postDataToFirebase(appData.userId,appData.isAdmin);
                                 Navigator.pop(context);
                                 ToastModel().getToastModel("تمت المزامنة");
                               }else{
@@ -125,10 +127,18 @@ class _MenuScreen extends State<MenuScreen> {
 
                           }, size),]),
 
-                  myButton2("المهمات",
-                      Icons.task_alt_outlined, () {
-                        pushToScreen(context,AllTaskScreenLanding());
-                    }, size),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      myButton3("ملاحظات المدير",
+                          Icons.sticky_note_2_outlined, () {
+                            pushToScreen(context,NoteScreen());
+                          }, size),   myButton3("المهمات",
+                          Icons.task_alt_outlined, () {
+                            pushToScreen(context,AllTaskScreenLanding());
+                          }, size),
+                   ],),
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -257,8 +267,8 @@ class _MenuScreen extends State<MenuScreen> {
     return InkWell(
       onTap: onTap,
       child: Container(
-          width: size.width*0.9,
-          height: size.height * 0.15,
+          width: size.width*0.4,
+          height: size.height * 0.13,
           margin: EdgeInsets.symmetric(horizontal: size.width*0.01),
           alignment: Alignment.center,
           decoration: BoxDecoration(
@@ -266,8 +276,8 @@ class _MenuScreen extends State<MenuScreen> {
               begin: Alignment.topRight,
               end: Alignment.bottomLeft,
               colors: [
-                ColorsModel.ColorsWhite,
-                ColorsModel.ColorsWhite,
+                ColorsModel.ColorsMineLite,
+                ColorsModel.ColorsMineLite,
               ],
             ),            borderRadius: BorderRadius.circular(15
           ),
@@ -279,10 +289,10 @@ class _MenuScreen extends State<MenuScreen> {
               GradientIcon(
                 icon,
                 size.width * 0.1,
-                 LinearGradient(
+                const LinearGradient(
                   begin: Alignment.bottomCenter, colors: [
-                   ColorsModel.ColorsMineLite,
-                   ColorsModel.ColorsMineLite,
+                  Colors.white,
+                  Colors.white,
 
                 ],),
               ),
@@ -293,7 +303,7 @@ class _MenuScreen extends State<MenuScreen> {
                 txt,
                 style: TextStyle(
                     fontFamily: "TS-Safaa",
-                    color: ColorsModel.ColorsMineLite,
+                    color: Colors.white,
                     fontSize: size.height * 0.03,
                     fontWeight: FontWeight.w600
                 ),

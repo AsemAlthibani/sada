@@ -31,37 +31,27 @@ class _EmployeesAddScreen extends State<EmployeesAddScreen> {
 
     return Scaffold(
         appBar: AppBar(
-            elevation: 0,
-            centerTitle: true,
-            flexibleSpace: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter, colors: [
-                  ColorsModel.ColorsMineLite, ColorsModel.ColorsMineLite],
-                ),
-
+          backgroundColor: Colors.white,
+          elevation: 2,
+          leading: IconButton(
+              icon: Icon(
+                Icons.arrow_back_ios,
+                color: ColorsModel.ColorsMineLite,
+                size: 30,
               ),
-            ),
-            backgroundColor: ColorsModel.ColorsMineLite,
-            title: Text(
-              "مهمة جديدة",
-              style: TextStyle(
-                  fontFamily: "TS-Safaa",
-                  color: Colors.white,
-                  fontSize: size.width * 0.05,
-                  fontWeight: FontWeight.w500
-              ),
-            ),
-            leading: IconButton(
               onPressed: () {
                 Navigator.pop(context);
-              },
-              icon: Icon(
-                  Icons.arrow_back_ios,
-                  color: Colors.white
-              ),),
-            actions: [
-            ]
+              }),
+          title: Text(
+            "اظافة موظف",
+            style: TextStyle(
+                fontFamily: "TS-Safaa",
+                color: ColorsModel.ColorsMineLite,
+                fontSize: size.width * 0.05,
+                fontWeight: FontWeight.w500
+            ),
+          ),
+          centerTitle: true,
         ),
         body: SingleChildScrollView(
           child: Column(
@@ -130,6 +120,9 @@ class _EmployeesAddScreen extends State<EmployeesAddScreen> {
                                 if(employeesController.isNewUser){
                                   await employeesController.userSetupWithFirebase(appData.userId);
                                   await employeesController.addEmployees(appData.userId);
+                                  Navigator.pop(context);
+                                  ToastModel().getToastModel("تمت الاضافة");
+                                  await employeesController.getEmployeesFromDb();
                                   Navigator.pop(context);
                                 }else{
                                   Navigator.pop(context);

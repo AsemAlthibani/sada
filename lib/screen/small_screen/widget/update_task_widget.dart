@@ -2,11 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:sada/controller/employees_controller.dart';
 import 'package:sada/controller/task_controller.dart';
 import 'package:sada/model/color_model.dart';
+import 'package:sada/model/database_model/reports_uploaded.dart';
+import 'package:sada/model/database_model/users.dart';
 import 'package:sada/model/toast_model.dart';
+import 'package:sada/screen/small_screen/admin/user_details_screen.dart';
 import '../../../controller/app_data_controller.dart';
-import '../../../controller/drive_upload_controller.dart';
+import '../../../controller/firebase/drive_upload_controller.dart';
+import '../../../model/database_model/department.dart';
+import '../../../model/database_model/task.dart';
+import '../../screen_landing/landing_screen.dart';
+import '../admin/admin_menu_screen.dart';
 import 'custom_progress_dialog.dart';
 
 updateTask(context, size, setState) {
@@ -76,9 +84,404 @@ showReportsUploaded(context,size){
             },
           ));
 }
-dataReportsUploaded(context, size, setState) {
+downloadReportsUploaded(context,size,ReportsUploaded listReports){
+  return showModalBottomSheet(
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+              top: Radius.circular(70.0))),
+      context: context,
+      isScrollControlled: true,
+      builder: (context) =>
+          StatefulBuilder(
+            builder: (BuildContext context,
+                void Function(void Function()) setState) {
+              return SingleChildScrollView(
+                child: openReportsUploaded(context, size, setState,listReports),
+              );
+            },
+          ));
+
+}
+openTaskBottomSheet(context,size,Task task,index,adminShare){
+  return showModalBottomSheet(
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+              top: Radius.circular(70.0))),
+      context: context,
+      isScrollControlled: true,
+      builder: (context) =>
+          StatefulBuilder(
+            builder: (BuildContext context,
+                void Function(void Function()) setState) {
+              return SingleChildScrollView(
+                child: openTaskD(context, size, setState, task,index,adminShare),
+              );
+            },
+          ));
+
+}
+openUserBottomSheet(context,size,Users user,index){
+  return showModalBottomSheet(
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+              top: Radius.circular(70.0))),
+      context: context,
+      isScrollControlled: true,
+      builder: (context) =>
+          StatefulBuilder(
+            builder: (BuildContext context,
+                void Function(void Function()) setState) {
+              return SingleChildScrollView(
+                child: openUser(context, size, setState, user,index),
+              );
+            },
+          ));
+
+}
+openDepartmentBottomSheet(context,size,Department department,index){
+  return showModalBottomSheet(
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+              top: Radius.circular(70.0))),
+      context: context,
+      isScrollControlled: true,
+      builder: (context) =>
+          StatefulBuilder(
+            builder: (BuildContext context,
+                void Function(void Function()) setState) {
+              return SingleChildScrollView(
+                child: openDepartment(context, size, setState, department,index),
+              );
+            },
+          ));
+
+}
+openReportsUploaded(context, size, setState,ReportsUploaded listReports) {
   final DriveUploadController driveUpload = Provider.of<DriveUploadController>(context, listen: false);
   final DriveUploadController driveUploadController = Provider.of<DriveUploadController>(context, listen: true);
+  final AppDataController appData = Provider.of<AppDataController>(context, listen: false);
+  return Container(
+    margin: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom),
+    alignment: Alignment.center,
+    padding: EdgeInsets.symmetric(
+        vertical: size.height * 0.01, horizontal: size.width * 0.03),
+    child: Column(children: [
+      appData.isAdmin!?listReports.downloaded==0?custmContainer(size,"فتح في درايف",Icons.drive_file_move_outlined,()async{
+        await driveUpload.openFileUrl(listReports.file_url);
+      }):Container():Container(),
+      appData.isAdmin!?custmContainer(size,"تحميل المبلف",Icons.download_outlined,()async{
+        await driveUpload.openFile(await driveUpload.downloadFile(listReports.file_url, listReports.file_name,context));
+      }):Container(),
+      appData.isAdmin!?listReports.downloaded==1?custmContainer(size,"فتح الملف",Icons.file_open_outlined,()async{
+        await driveUpload.openFile(listReports.file_path);
+      }):Container():custmContainer(size,"فتح الملف",Icons.file_open_outlined,()async{
+        await driveUpload.openFile(listReports.file_path);
+      }),
+      appData.isAdmin!?driveUploadController.type==2?custmContainer(size,"اضافة ملاحظة",Icons.note_add_outlined,(){
+        Navigator.pop(context);
+        showModalBottomSheet(
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(70.0))),
+            context: context,
+            isScrollControlled: true,
+            builder: (context) =>
+                StatefulBuilder(
+                  builder: (BuildContext context,
+                      void Function(void Function()) setState) {
+                    return SingleChildScrollView(
+                      child: adminAddNoteForReportsUploaded(context, size, setState,listReports),
+                    );
+                  },
+                ));
+      }):Container():Container(),
+      custmContainer(size,"رجوع",Icons.arrow_back_ios,(){
+        Navigator.pop(context);
+      })
+    ],),
+  );
+}
+openTaskD(context, size, setState,Task task,index,bool adminShare) {
+  final TaskController taskController = Provider.of<TaskController>(context, listen: false);
+  final AppDataController appData = Provider.of<AppDataController>(context, listen: false);
+  return Container(
+    margin: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom),
+    alignment: Alignment.center,
+    padding: EdgeInsets.symmetric(
+        vertical: size.height * 0.01, horizontal: size.width * 0.03),
+    child: Column(children: [
+      custmContainer(size,"حذف",Icons.delete_forever_outlined,()async{
+        taskController.deleteTask(task,appData.userId,index);
+        Navigator.pop(context);
+      }),
+      custmContainer(size,"تعديل",Icons.edit,()async{
+        taskController.updateTaskNewAdd(task,index);
+        taskController.setUpdateData(task,index);
+        pushToScreen(context, TaskDetailsScreenLanding(adminShare:adminShare ));
+      }),
+      custmContainer(size,"رجوع",Icons.arrow_back_ios,(){
+        Navigator.pop(context);
+      })
+    ],),
+  );
+}
+openDepartment(context, size, setState,Department department,index) {
+  final TaskController taskController = Provider.of<TaskController>(context, listen: false);
+  final AppDataController appData = Provider.of<AppDataController>(context, listen: false);
+  return Container(
+    margin: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom),
+    alignment: Alignment.center,
+    padding: EdgeInsets.symmetric(
+        vertical: size.height * 0.01, horizontal: size.width * 0.03),
+    child: Column(children: [
+      custmContainer(size,"حذف",Icons.delete_forever_outlined,()async{
+        taskController.deleteDepartment(department,appData.userId,index);
+        Navigator.pop(context);
+      }),
+      custmContainer(size,"تعديل",Icons.edit,()async{
+        taskController.setDepartment(department);
+        updateDepartment(context, size, setState, false,department.id) ;
+      }),
+      custmContainer(size,"رجوع",Icons.arrow_back_ios,(){
+        Navigator.pop(context);
+      })
+    ],),
+  );
+}
+
+updateDepartment(context, size, setState, isorientation,id) {
+  final TaskController taskController = Provider.of<TaskController>(
+      context, listen: false);
+  showModalBottomSheet(
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+              top: Radius.circular(70.0))),
+      context: context,
+
+      isScrollControlled: true,
+      builder: (context) =>
+          StatefulBuilder(
+            builder: (BuildContext context,
+                void Function(void Function()) setState) {
+              return SingleChildScrollView(
+                  child: Container(
+                      margin: EdgeInsets.only(
+                          bottom: MediaQuery
+                              .of(context)
+                              .viewInsets
+                              .bottom),
+                      alignment: Alignment.center,
+                      padding: EdgeInsets.symmetric(
+                          vertical: size.height * 0.01,
+                          horizontal: size.width * 0.03),
+                      child: Column(children: [
+                        Text(
+                          "اضافة قسم",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontFamily: "TS-Safaa",
+                              color: Colors.grey.shade800,
+                              fontSize: size.width * 0.05,
+                              fontWeight: FontWeight.bold
+                          ),
+                        ),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "اسم القسم",
+                              style: TextStyle(
+                                  fontFamily: "TS-Safaa",
+                                  color: Colors.grey.shade800,
+                                  fontSize: size.width * 0.04,
+                                  fontWeight: FontWeight.bold
+                              ),
+                            ), Container(
+                              padding: EdgeInsets.symmetric(
+                                vertical: size.height * 0.02,),
+                              child:
+
+                              myTextField(
+                                  size, "", taskController.departmentName,
+                                  Icons.local_fire_department_outlined,
+                                  size.height * 0.1),
+
+                            )
+                          ],),
+
+                        Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: size.width * 0.03,),
+                            child:
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                InkWell(
+                                    onTap: () async {
+                                      if (taskController.departmentName.text !=
+                                          "") {
+                                        await taskController.updateDepartment(
+                                            id);
+                                        await taskController.getDepartmentFromDb();
+                                        Navigator.pop(context);
+                                        ToastModel().getToastModel(
+                                            "تمت النعديل");
+                                        setState(() {
+                                          taskController.departmentName.text =
+                                          "";
+                                        });
+                                      } else {
+                                        ToastModel().getToastModel(
+                                            "يوجد حقول فارغة");
+                                      }
+                                    },
+                                    child: Container(
+                                      height: size.height * 0.07,
+                                      width: size.width * 0.42,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          begin: Alignment.bottomCenter,
+                                          colors: [
+                                            ColorsModel.ColorsMineLite,
+                                            ColorsModel.ColorsMineLite
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(25),
+                                      ),
+                                      child: Text(
+                                        "حفظ",
+                                        textAlign: TextAlign.center,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontFamily: "TS-Safaa",
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: size.width * 0.045,
+                                        ),
+                                      ),
+                                    )),
+                                InkWell(
+                                    onTap: () {
+                                      setState(() {
+                                        taskController.departmentName.text = "";
+                                      });
+                                      Navigator.pop(context);
+                                    },
+                                    child: Container(
+                                      height: size.height * 0.07,
+                                      width: size.width * 0.42,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                          gradient: const LinearGradient(
+                                            begin: Alignment.bottomCenter,
+                                            colors: [
+                                              ColorsModel.ColorsWhite,
+                                              ColorsModel.ColorsWhite
+                                            ],
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                              25),
+                                          border: Border.all(
+                                              color: ColorsModel.ColorsMineLite)
+                                      ),
+                                      child: Text(
+                                        "الغاء",
+                                        textAlign: TextAlign.center,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontFamily: "TS-Safaa",
+                                          color: ColorsModel.ColorsMineLite,
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: size.width * 0.045,
+                                        ),
+                                      ),
+                                    )),
+
+                              ],
+                            )
+                        ),
+                      ],
+                      )
+                  ));
+            },
+          ));
+}
+
+openUser(context, size, setState,Users user,index) {
+  final EmployeesController employeesController = Provider.of<EmployeesController>(context, listen: false);
+  return Container(
+    margin: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom),
+    alignment: Alignment.center,
+    padding: EdgeInsets.symmetric(
+        vertical: size.height * 0.01, horizontal: size.width * 0.03),
+    child: Column(children: [
+      custmContainer(size,"حذف",Icons.delete_forever_outlined,()async{
+  try {
+  bool result = await InternetConnectionChecker().hasConnection;
+  showUpdateProgress(context);
+  if(result){
+    //await employeesController.deleteUsers(user,appData.userId,index);
+    await employeesController.deleteWithFirebase(user.online_id);
+    Navigator.pop(context);
+    ToastModel().getToastModel("تم الحذف");
+  }else{
+  Navigator.pop(context);
+  ToastModel().getToastModel("الرجاء الارتباط بالانترنيت");
+  }
+  } catch (e) {
+    print(e.toString());
+  }
+      }),
+      custmContainer(size,"تعديل",Icons.edit,()async{
+        employeesController.setUpdateData(user);
+        pushToScreen(context, UserDetailsScreen());
+      }),
+      custmContainer(size,"رجوع",Icons.arrow_back_ios,(){
+        Navigator.pop(context);
+      })
+    ],),
+  );
+}
+custmContainer(size,myText,myIcons,onTap){
+  return InkWell(
+      onTap: onTap,
+      child: Container(
+    width: double.infinity,
+    margin: EdgeInsets.symmetric(horizontal: size.width*0.04,vertical:size.width*0.04 ),
+    decoration: BoxDecoration(
+      border: Border.symmetric(
+        horizontal: BorderSide(color: ColorsModel.ColorsMineLite),
+      ),
+    ),
+    child:Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          myIcons,
+          color: ColorsModel.ColorsMineLite,
+          size: 30,
+        ),
+        Text(
+          myText,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              fontFamily: "TS-Safaa",
+              color: Colors.grey.shade800,
+              fontSize: size.width * 0.05,
+              fontWeight: FontWeight.bold
+          ),
+        ),
+    ],)  ,
+  ));
+}
+dataReportsUploaded(context, size, setState) {
+  final DriveUploadController driveUpload = Provider.of<DriveUploadController>(context, listen: false);
   final AppDataController appData = Provider.of<AppDataController>(context, listen: false);
   return Container(
     margin: EdgeInsets.only(
@@ -111,11 +514,11 @@ dataReportsUploaded(context, size, setState) {
                 if(result){
                 if(driveUpload.fileName.text!=""){
                   showUpdateProgress(context);
-                  await driveUpload.uploadFileToGoogleDrive(context, appData.userId, appData.displayName);
+                  await driveUpload.uploadFileToGoogleDrive(context, appData.userId, appData.displayName,appData.isAdmin);
                   Navigator.of(context).pop();
                   Navigator.of(context).pop();
                   ToastModel().getToastModel("تم الرفع");
-                  await driveUpload.getFileUploaded();
+                  await driveUpload.getFileUploaded(appData.userId);
                 }else{
                   ToastModel().getToastModel("يوجد حقول فارغة");
                 }
@@ -133,10 +536,8 @@ dataReportsUploaded(context, size, setState) {
     ],),
   );
 }
-
 adminUpdateTask(context, size, setState) {
   final TaskController taskController = Provider.of<TaskController>(context, listen: false);
-  final TaskController taskControllerListen = Provider.of<TaskController>(context, listen: true);
   final AppDataController appData = Provider.of<AppDataController>(context, listen: false);
   return Container(
     margin: EdgeInsets.only(
@@ -164,7 +565,7 @@ adminUpdateTask(context, size, setState) {
             children: [
               myCustomButton(size,"حفظ",size.width * 0.42,[
                 ColorsModel.ColorsMineLite,  ColorsModel.ColorsMineLite],Colors.white,() async {
-                await taskController.updateTask();
+                await taskController.addNoteFileUploaded( appData.userId, appData.displayName, appData.isAdmin,1);
                 Navigator.pop(context);
                 ToastModel().getToastModel("تم التحديث");
                 taskController.getTaskToList(appData.userId);
@@ -180,7 +581,213 @@ adminUpdateTask(context, size, setState) {
   );
 }
 
+adminAddNoteForReportsUploaded(context, size, setState,ReportsUploaded reportsUploaded) {
+  final DriveUploadController driveUploadController = Provider.of<DriveUploadController>(context, listen: false);
+  final AppDataController appData = Provider.of<AppDataController>(context, listen: false);
+  return Container(
+    margin: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom),
+    alignment: Alignment.center,
+    padding: EdgeInsets.symmetric(
+        vertical: size.height * 0.01, horizontal: size.width * 0.03),
+    child: Column(children: [
+      Text(
+        "اضافة ملاحظة",
+        textAlign: TextAlign.center,
+        style: TextStyle(
+            fontFamily: "TS-Safaa",
+            color: Colors.grey.shade800,
+            fontSize: size.width * 0.05,
+            fontWeight: FontWeight.bold
+        ),
+      ),
+      myTextFieldNot(size,"ملاحظة",driveUploadController.adminNot,Icons.note_add_outlined,size.height*0.2),
+      Container(
+          padding: EdgeInsets.symmetric(horizontal: size.width * 0.03,),
+          child:
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              myCustomButton(size,"حفظ",size.width * 0.42,[
+                ColorsModel.ColorsMineLite,  ColorsModel.ColorsMineLite],Colors.white,() async {
+                if(driveUploadController.adminNot.text!=''){
+                  driveUploadController.addNoteFileUploaded(reportsUploaded, appData.userId, appData.displayName, appData.isAdmin,2);
+                  Navigator.pop(context);
+                  ToastModel().getToastModel("تمت الاضافة");
+                }else{
+                  ToastModel().getToastModel("حقل ملاحظة فارغة");
+                }
+              }),
+              myCustomButton(size,"الغاء",size.width * 0.42,[
+                ColorsModel.ColorsWhite,  ColorsModel.ColorsWhite],ColorsModel.ColorsMineLite,(){
+                Navigator.pop(context);
+              })
+            ],
+          )
+      ),
+    ],),
+  );
+}
+showAdminNoteTask(context, size, setState) {
+  final TaskController taskController = Provider.of<TaskController>(context, listen: false);
+  return showModalBottomSheet(
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+              top: Radius.circular(70.0))),
+      context: context,
+      isScrollControlled: true,
+      builder: (context) =>
+          StatefulBuilder(
+            builder: (BuildContext context,
+                void Function(void Function()) setState) {
+              return SingleChildScrollView(
+                child: Container(
+                  margin: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).viewInsets.bottom),
+                  alignment: Alignment.center,
+                  padding: EdgeInsets.symmetric(
+                      vertical: size.height * 0.01, horizontal: size.width * 0.0),
+                  child: Column(children: [
+                    Text(
+                      "الملاحظة",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontFamily: "TS-Safaa",
+                          color: Colors.grey.shade800,
+                          fontSize: size.width * 0.05,
+                          fontWeight: FontWeight.bold
+                      ),
+                    ),
+                    myTextFieldD(size,"اسم المهمة",taskController.nameDetails.text,size.height*0.1),
+                    myTextFieldD(size,"وصف المهمة",taskController.descriptionDetails.text,size.height*0.13),
+                    myTextFieldD(size,"منشئ المهمة",taskController.createByNameDetails.text,size.height*0.1),
+                    myTextFieldD(size,"الموكل بالمهمة",taskController.empNameDetails.text,size.height*0.1),
+                    myTextFieldD(size,"تاريخ البداء",taskController.startDateDetails.text,size.height*0.1),
+                    myTextFieldD(size,"تاريخ الانتهاء",taskController.endDateDetails.text,size.height*0.1),
+                    myTextFieldD(size,"الملاحظة",taskController.not.text,size.height*0.13),
+                  ],),
+                ),
+              );
+            },
+          ));
+}
+showAdminNoteReportsUploaded(context, size, setState) {
+  final TaskController taskController = Provider.of<TaskController>(context, listen: false);
+  return showModalBottomSheet(
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+              top: Radius.circular(70.0))),
+      context: context,
+      isScrollControlled: true,
+      builder: (context) =>
+          StatefulBuilder(
+            builder: (BuildContext context,
+                void Function(void Function()) setState) {
+              return SingleChildScrollView(
+                child: Container(
+                  margin: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).viewInsets.bottom),
+                  alignment: Alignment.center,
+                  padding: EdgeInsets.symmetric(
+                      vertical: size.height * 0.01, horizontal: size.width * 0.0),
+                  child: Column(children: [
+                    Text(
+                      "الملاحظة",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontFamily: "TS-Safaa",
+                          color: Colors.grey.shade800,
+                          fontSize: size.width * 0.05,
+                          fontWeight: FontWeight.bold
+                      ),
+                    ),
+                    myTextFieldD(size,"اسم التقرير",taskController.fileNameReportsUploaded.text,size.height*0.1),
+                    myTextFieldD(size,"الملاحظة",taskController.not.text,size.height*0.13),
+                  ],),
+                ),
+              );
+            },
+          ));
+}
 
+
+myTextFieldNot(size,eText,myController,eIcons,height){
+  return  SizedBox(
+    width: size.width,
+    height: height,
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+            padding: EdgeInsets.symmetric(horizontal: size.width*0.0),
+            width: size.width * 0.18,
+            alignment: Alignment.center,
+            child:
+            Text(
+              eText,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.w500,
+                fontSize: size.width * 0.04,
+                fontFamily: "TS-Safaa",
+
+              ),
+            )),
+        Container(
+          width: size.width * 0.75,
+          height: height - size.height * 0.02,
+          margin: EdgeInsets.only(top: size.height * 0.01, bottom: size.height * 0.01),
+          decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: ColorsModel.ColorsMineLite)
+          ),
+          child: TextField(
+            maxLines: height==size.height*0.2?10:1,
+            //wrap text
+            autofocus: true,
+            textAlignVertical: TextAlignVertical.bottom,
+            controller: myController,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              color: ColorsModel.ColorsMineLite,
+              fontWeight: FontWeight.w500,
+              fontSize: size.width * 0.035,
+              fontFamily: "TS-Safaa",
+            ),
+            decoration: InputDecoration(
+              isDense: true,
+              border: const OutlineInputBorder(),
+              contentPadding: EdgeInsets.symmetric(vertical: size.width * 0.05, horizontal: size.width * 0.02),
+              suffixIcon: IconButton(
+                alignment: Alignment.center,
+                onPressed: () {},
+                icon: Icon(
+                  eIcons,
+                  color: ColorsModel.ColorsMineLite,
+                  size: size.width * 0.05,
+                ),
+              ),
+              hintStyle: TextStyle(
+                fontFamily: "TS-Safaa",
+                color: Colors.grey.shade600,
+                fontSize: size.width * 0.035,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderSide: const BorderSide(width: 1, color: Colors.grey),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: const BorderSide(width: 1, color: ColorsModel.ColorsMineLite),
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+        ),
+      ],),
+  );
+}
 myTextField(size,eText,myController,eIcons,height){
   return  SizedBox(
     width: size.width,
@@ -213,49 +820,49 @@ myTextField(size,eText,myController,eIcons,height){
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: ColorsModel.ColorsMineLite)
           ),
-            child: TextField(
-              maxLines: height==size.height*0.2?10:1,
-              //wrap text
-              autofocus: true,
-              textAlignVertical: TextAlignVertical.bottom,
-              controller: myController,
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                color: ColorsModel.ColorsMineLite,
-                fontWeight: FontWeight.w500,
-                fontSize: size.width * 0.035,
-                fontFamily: "TS-Safaa",
+          child: TextField(
+            maxLines: height==size.height*0.2?10:1,
+            //wrap text
+            autofocus: true,
+            textAlignVertical: TextAlignVertical.bottom,
+            controller: myController,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              color: ColorsModel.ColorsMineLite,
+              fontWeight: FontWeight.w500,
+              fontSize: size.width * 0.035,
+              fontFamily: "TS-Safaa",
+            ),
+            decoration: InputDecoration(
+              isDense: true,
+              border: const OutlineInputBorder(),
+              contentPadding: EdgeInsets.symmetric(vertical: size.width * 0.05, horizontal: size.width * 0.02),
+              suffixIcon: IconButton(
+                alignment: Alignment.center,
+                onPressed: () {},
+                icon: Icon(
+                  eIcons,
+                  color: ColorsModel.ColorsMineLite,
+                  size: size.width * 0.05,
+                ),
               ),
-              decoration: InputDecoration(
-                isDense: true,
-                border: const OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(vertical: size.width * 0.05, horizontal: size.width * 0.02),
-                suffixIcon: IconButton(
-                  alignment: Alignment.center,
-                  onPressed: () {},
-                  icon: Icon(
-                    eIcons,
-                    color: ColorsModel.ColorsMineLite,
-                    size: size.width * 0.05,
-                  ),
-                ),
-                hintStyle: TextStyle(
-                  fontFamily: "TS-Safaa",
-                  color: Colors.grey.shade600,
-                  fontSize: size.width * 0.035,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(width: 1, color: Colors.grey),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(width: 1, color: ColorsModel.ColorsMineLite),
-                  borderRadius: BorderRadius.circular(10),
-                ),
+              hintStyle: TextStyle(
+                fontFamily: "TS-Safaa",
+                color: Colors.grey.shade600,
+                fontSize: size.width * 0.035,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderSide: const BorderSide(width: 1, color: Colors.grey),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: const BorderSide(width: 1, color: ColorsModel.ColorsMineLite),
+                borderRadius: BorderRadius.circular(10),
               ),
             ),
           ),
-           ],),
+        ),
+      ],),
   );
 }
 

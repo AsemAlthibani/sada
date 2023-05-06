@@ -3,7 +3,7 @@ class  Task {
   var id, completion_rate, task_completed, start_date, create_by, end_date,
       department_id, emp_id, task_description,
       task_name, updated, api, date, emp_name, create_by_name, enable_admin,
-      online_id, not,for_admin;
+      online_id, not,for_admin,new_add;
 
 
   Task({
@@ -16,6 +16,7 @@ class  Task {
     this.online_id,
     this.enable_admin,
     this.create_by,
+    this.new_add,
     this.start_date,
     this.end_date,
     this.date,
@@ -47,9 +48,31 @@ class  Task {
         completion_rate: json["completion_rate"],
         updated: json["updated"],
         api: json["api"],
+        new_add: json["new_add"],
         for_admin: json["for_admin"]?1:0,
       );
-
+  factory Task.fromMapGet(Map<String, dynamic> json) =>
+      Task(
+        task_name: json["task_name"],
+        task_description: json["task_description"],
+        date: json["date"],
+        emp_id: json["emp_id"],
+        not: json["not"],
+        online_id: json["id"],
+        enable_admin: json["enable_admin"]?1:0,
+        create_by: json["create_by"],
+        create_by_name: json["create_by_name"],
+        emp_name: json["emp_name"],
+        department_id: json["department_id"],
+        end_date: json["end_date"],
+        start_date: json["start_date"],
+        task_completed: json["task_completed"]?1:0,
+        completion_rate: json["completion_rate"],
+        updated: json["updated"],
+        new_add: json["new_add"],
+        api: json["api"],
+        for_admin: json["for_admin"]?1:0,
+      );
   factory Task.froEmpMap(Map<String, dynamic> json) =>
       Task(
         task_name: json["task_name"],
@@ -69,6 +92,7 @@ class  Task {
         completion_rate: json["completion_rate"],
         updated: json["updated"],
         api: json["api"],
+        new_add: 0,
         for_admin: json["for_admin"]?1:0,
       );
 
@@ -92,6 +116,7 @@ class  Task {
         completion_rate: json["completion_rate"],
         updated: json["updated"],
         api: json["api"],
+        new_add: json["new_add"],
         for_admin: json["for_admin"]?1:0,
       );
 
@@ -115,6 +140,7 @@ class  Task {
       'emp_id': emp_id,
       "updated": updated,
       "for_admin": for_admin,
+      "new_add": new_add,
       "api": api,
     };
   }

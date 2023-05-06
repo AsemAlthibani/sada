@@ -52,16 +52,6 @@ class _TaskDetailsScreen extends State<TaskDetailsScreen> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(15.0),
-            child: Icon(
-              Icons.notifications,
-              size: 30,
-              color: ColorsModel.ColorsMineLite,
-            ),
-          )
-        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -151,6 +141,6 @@ class _TaskDetailsScreen extends State<TaskDetailsScreen> {
 
     );
   }
-
 }
+
 

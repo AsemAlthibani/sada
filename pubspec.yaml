@@ -65,6 +65,11 @@ dependencies:
   easy_localization: ^3.0.1
   fl_chart: ^0.55.2
   sqflite_common_ffi: ^2.2.0+1
+  url_launcher:
+  open_app_file: ^4.0.1
+  syncfusion_flutter_charts: ^20.3.61
+  firebase_messaging:
+  firebase_admin: ^0.2.0
 
 
 dev_dependencies:

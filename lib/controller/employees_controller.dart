@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:sada/model/database_model/task.dart';
 import 'package:sada/model/database_model/users.dart';
 import '../model/database_helper.dart';
+import '../model/database_model/deleted_item.dart';
 import '../model/database_model/department.dart';
 
 class EmployeesController extends ChangeNotifier {
@@ -17,16 +18,16 @@ class EmployeesController extends ChangeNotifier {
   bool isNewUser=false;
   String? departmentName="";
   var userId ;
+  Users? users;
   TextEditingController username= TextEditingController();
   TextEditingController password= TextEditingController();
   TextEditingController email= TextEditingController();
   TextEditingController phone= TextEditingController();
   TextEditingController description= TextEditingController();
-  double currentSliderValue = 20;
 
   getAllDepartment()async{
     restData();
-    List<Department> emp=await _databaseHelper.retrieveDepartmentFromDb();
+    List<Department> emp=await _databaseHelper.retrieveDepartmentFromDb('SELECT * FROM department');
     if(emp.isNotEmpty){
       for(int i=0;i<emp.length;i++) {
         departmentList.add([emp[i].id,emp[i].department_name]);
@@ -54,27 +55,33 @@ class EmployeesController extends ChangeNotifier {
       user_description: description.text,
       user_name: username.text,
       user_id: userId,
-      updated: 1,
+      updated: 2,
         create_at:DateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'","en").format(DateTime.now()),
         create_by:create_by,
       api: 1,
       isAdmin: isAdmin
     );
     await _databaseHelper.insertToTableDB("users", users.toMap());
-
   }
-  setSliderValue(value){
-    currentSliderValue=double.parse(value.toString());
-    notifyListeners();
+  Future<void> updateEmployees()async{
+    await _databaseHelper.updateItemTabletDb("users", users!.id,
+        "user_phone='${phone.text}',department_id=$departmentId,user_description='${description.text}',"
+            "isAdmin='${isAdmin?1:0}',user_name='${username.text}' , updated=0 ");
   }
-
-  setUpdateData(task){
-    email.text = task.completion_rate.toString();
-    username.text = task.end_date.toString();
-    password.text = task.start_date.toString();
-    description.text = task.task_description.toString();
-    phone.text = task.task_name.toString();
-    currentSliderValue = double.parse(task.completion_rate.toString());
+  setUpdateData(Users users){
+    this.users=users;
+    email.text = users.user_email.toString();
+    username.text = users.user_name.toString();
+    password.text = users.user_password.toString();
+    description.text = users.user_description.toString();
+    phone.text = users.user_phone.toString();
+    isAdmin=users.isAdmin==1?true:false;
+    for(int i=0;i<departmentList.length;i++){
+      if(departmentList[i][0]==users.department_id){
+        departmentIndex=i;
+        departmentName=departmentList[i][1];
+      }
+    }
     notifyListeners();
   }
   updateTaskCompleted(id)async{
@@ -104,16 +111,26 @@ class EmployeesController extends ChangeNotifier {
       return await _databaseHelper.retrieveTaskFromDb('SELECT * FROM task where create_by="$create_by" AND  emp_id !="$create_by"');
     }
   }
-  Future<List<Task>> getTaskTypeForAdminFromDb(type,create_by)async{
-    if(type==1){
-      return await _databaseHelper.retrieveTaskFromDb('SELECT * FROM task where enable_admin=0 AND for_admin=1 ');
-    }else{
-      return await _databaseHelper.retrieveTaskFromDb('SELECT * FROM task where enable_admin=1 AND for_admin=1');
-    }
+
+  List<Users> employeesList =[];
+  List<Users> _employeesList =[];
+  Future<void> getEmployeesFromDb()async{
+    employeesList= await _databaseHelper.retrieveUsersFromDb('SELECT * FROM users');
+    _employeesList=employeesList;
+    notifyListeners();
   }
-  Future<List<Users>> getEmployeesFromDb()async{
-    // enable_admin;
-    return await _databaseHelper.retrieveUsersFromDb();
+  void departmentFilter(String enteredKeyword) {
+    List<Users> results = [];
+    if (enteredKeyword.isEmpty) {
+      results = _employeesList;
+    } else {
+      results = _employeesList
+          .where((user) =>
+          user.user_name.toLowerCase().contains(enteredKeyword.toLowerCase()))
+          .toList();
+    }
+    departmentList=results;
+    notifyListeners();
   }
   Future<User> signInWithFirebase() async {
     final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -132,12 +149,34 @@ class EmployeesController extends ChangeNotifier {
     notifyListeners();
     return user!;
   }
+  Future<void> deleteWithFirebase(userId) async {
+  //  CollectionReference collectionRef = FirebaseFirestore.instance.collection('Users');
+//    await collectionRef.doc(userId).delete();
+
+//    final UserCredential authResult =await FirebaseAuth.instance.currentUser;
+  //  final User? user = authResult.user;
+   // print(user!.email);
+    notifyListeners();
+  }
+  deleteUsers(Users user,delete_by,index) async {
+    DeletedItem deletedItem=DeletedItem(
+      delete_at: DateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", "en").format(DateTime.now()),
+      delete_by: delete_by,
+      item_type: 1,
+      online_id:user.user_id,
+      api: 1,);
+    await _databaseHelper.insertToTableDB("deleted_item", deletedItem.toMap());
+    await _databaseHelper.deleteItemsInTableDb("users", user.id);
+    employeesList.removeAt(index);
+    notifyListeners();
+  }
   Future<void> userSetupWithFirebase(create_by) async {
     CollectionReference users = FirebaseFirestore.instance.collection('Users');
     FirebaseAuth auth = FirebaseAuth.instance;
      userId = auth.currentUser!.uid.toString();
-    users.add({'user_name': username.text, 'user_id': userId,"user_phone":phone.text,"user_email":email.text,"user_password":password.text,
+    DocumentReference docRef = await users.add({'user_name': username.text, 'user_id': userId,"user_phone":phone.text,"user_email":email.text,"user_password":password.text,
       "isAdmin":isAdmin,"user_description":description.text,"department_id":departmentId,"create_by":create_by,"create_at":DateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'","en").format(DateTime.now()),});
+    await docRef.update({'id': docRef.id});
     notifyListeners();
     return;
   }

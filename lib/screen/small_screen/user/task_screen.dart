@@ -1,16 +1,13 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:sada/controller/employees_controller.dart';
-import 'package:sada/model/database_model/task.dart';
 import 'package:sada/controller/task_controller.dart';
 import 'package:sada/model/color_model.dart';
 import 'package:sada/model/toast_model.dart';
 import 'package:sada/screen/screen_landing/landing_screen.dart';
-
 import '../../../controller/app_data_controller.dart';
 import '../widget/task_list.dart';
+import '../widget/update_task_widget.dart';
 import 'menu_screen.dart';
 
 
@@ -73,16 +70,6 @@ class _TaskScreen extends State<TaskScreen> with TickerProviderStateMixin {
           ),
         ),
         centerTitle: true,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(15.0),
-            child: Icon(
-              Icons.notifications,
-              size: 30,
-              color: ColorsModel.ColorsMineLite,
-            ),
-          )
-        ],
       ),
       body: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -96,17 +83,17 @@ class _TaskScreen extends State<TaskScreen> with TickerProviderStateMixin {
                 child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child:Row(children:[
-                      rowButton(size, 'المهام اللتي انشئتها', Icons.all_inclusive_outlined, 1, ()async{
+                      rowButton(size, 'المهام التي أنشأتها', Icons.all_inclusive_outlined, 1, ()async{
                         setStatusColor(1);
                         taskController.setType(1);
                         await taskController.getTaskToList(appData.userId);
                       }),
-                      rowButton(size, "المهمام الموكلة اليك", Icons.all_inclusive_outlined, 2, ()async{
+                      rowButton(size, "المهام الموكلة إليك", Icons.all_inclusive_outlined, 2, ()async{
                         setStatusColor(2);
                         taskController.setType(2);
                         await taskController.getTaskToList(appData.userId);
                       }),
-                      rowButton(size, 'المهام اللتي انشئتها لموظف', Icons.all_inclusive_outlined, 3, ()async{
+                      rowButton(size, 'المهام التي أنشأتها لموظف', Icons.all_inclusive_outlined, 3, ()async{
                         setStatusColor(3);
                         taskController.setType(3);
                         await taskController.getTaskToList(appData.userId);
@@ -129,6 +116,7 @@ class _TaskScreen extends State<TaskScreen> with TickerProviderStateMixin {
                     margin: EdgeInsets.only(top: size.height * 0.01,bottom: size.height * 0.01),
                     child:
                     TextField(
+                      onChanged: taskController.taskFilter,
                       decoration: InputDecoration(
                         contentPadding:
                         EdgeInsets.symmetric(vertical: size.width * 0.02, horizontal: size.width * 0.05),
@@ -186,9 +174,11 @@ class _TaskScreen extends State<TaskScreen> with TickerProviderStateMixin {
                       callBack: () {
                         print(taskControllerListen.taskList[index].create_by);
                         print(taskControllerListen.taskList[index].emp_id);
+                        taskController.updateTaskNewAdd(taskControllerListen.taskList[index],index);
                         taskController.setUpdateData(taskControllerListen.taskList[index],index);
                         pushToScreen(context,const TaskDetailsScreenLanding(adminShare:false));
-                        print(taskControllerListen.taskList[index].online_id);
+                        print(taskControllerListen.taskList[index].new_add);
+
                       },
                       callBack2: () {
                         taskController.updateTaskCompleted(taskControllerListen.taskList[index]);
@@ -196,13 +186,20 @@ class _TaskScreen extends State<TaskScreen> with TickerProviderStateMixin {
                           taskControllerListen.taskList[index].task_completed=1;
                         });
                       },
+                        callBack3: () {
+                          if(taskController.type!=2){
+                            openTaskBottomSheet(context,size,taskControllerListen.taskList[index],index,false);
+                          }
+                      }
                     ):verticalTaskListView(
                       animation: animation,
                       animationController: animationController,
                       itemList: taskControllerListen.taskList[index],
+
                       callBack: () {
                         print(taskControllerListen.taskList[index].create_by);
                         print(taskControllerListen.taskList[index].emp_id);
+                        taskController.updateTaskNewAdd(taskControllerListen.taskList[index],index);
                         taskController.setUpdateData(taskControllerListen.taskList[index],index);
                         pushToScreen(context,const TaskDetailsScreenLanding(adminShare:false));
                         print(taskControllerListen.taskList[index].online_id);
@@ -213,6 +210,10 @@ class _TaskScreen extends State<TaskScreen> with TickerProviderStateMixin {
                           taskControllerListen.taskList[index].task_completed=1;
                         });
                       },
+                      callBack3: () {
+                        if(taskController.type!=2){
+                        openTaskBottomSheet(context,size,taskControllerListen.taskList[index],index,false);
+                      }}
                     );
                   },
                 ),
@@ -472,14 +473,12 @@ class _TaskScreen extends State<TaskScreen> with TickerProviderStateMixin {
                   suffixIcon: IconButton(
                     alignment: Alignment.center,
                     onPressed: () {
-
                     },
                     icon: Icon(eIcons,
                       color:ColorsModel.ColorsMineLite,
                       size:  size.width *0.05,
                     ),
                   ),
-
                   hintStyle: TextStyle(
                     fontFamily: "TS-Safaa",
                     color: Colors.grey.shade600,
@@ -508,7 +507,6 @@ class _TaskScreen extends State<TaskScreen> with TickerProviderStateMixin {
                     initialDate: DateTime.now(),
                     firstDate: DateTime(1950),
                     lastDate: DateTime(2050),
-
                     builder: (context, child) {
                       return Theme(
                           data: Theme.of(context).copyWith(
